@@ -1,11 +1,8 @@
 import os
 from dataclasses import dataclass
-from pathlib import Path
 
-from llm_common.llm_infer.call import call_openai, load_env_file
+from llm_common.llm_infer.load_env import ENV_FILE, load_env_file
 
-_ROOT = Path(__file__).resolve().parents[1]
-ENV_FILE = Path(os.environ.get("ENV_FILE", _ROOT / ".env"))
 load_env_file(ENV_FILE)
 SII_API_KEY = os.environ.get("SII_API_KEY", "")
 
@@ -137,6 +134,7 @@ GLM51FP8_API = ApiConfig.from_env(
 
 
 def main():
+    from llm_common.llm_infer.call import call_openai
     text = call_openai(
         api_key=DEFAULT_1T_BASELINE_API.api_key,
         base_url=DEFAULT_1T_BASELINE_API.base_url,

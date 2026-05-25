@@ -10,40 +10,9 @@ from pathlib import Path
 from typing import Any, Optional, Sequence
 
 from llm_common.llm_infer.api_info.dataclass_ import ApiConfig
-
-ROOT = Path(__file__).resolve().parents[0]
-ENV_FILE = Path(os.environ.get("ENV_FILE", ROOT / ".env"))
-
+from llm_common.llm_infer.load_env import ENV_FILE, load_env_file, read_env_file, require_env
 
 api_innospark_cn_v_ = "https://api.innospark.cn/v1"
-
-
-def load_env_file(path: Path) -> None:
-    for key, value in read_env_file(path).items():
-        os.environ.setdefault(key, value)
-
-
-def read_env_file(path: Path) -> dict[str, str]:
-    if not path.exists():
-        return {}
-    values: dict[str, str] = {}
-    for line in path.read_text(encoding="utf-8").splitlines():
-        line = line.strip()
-        if not line or line.startswith("#") or "=" not in line:
-            continue
-        key, value = line.split("=", 1)
-        key = key.strip()
-        value = value.strip().strip('"').strip("'")
-        values[key] = value
-    return values
-
-
-def require_env(name: str, fallback: str = "") -> str:
-    value = os.environ.get(name, fallback).strip()
-    if not value:
-        print(f"ERROR: {name} is empty. Set it in {ENV_FILE} or export {name}.", file=sys.stderr)
-        sys.exit(2)
-    return value
 
 
 def stream_sse_lines(response):
