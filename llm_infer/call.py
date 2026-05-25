@@ -157,7 +157,9 @@ class CallOpenaiInput(object):
         local_env.update(os.environ)
 
         api_key = (self.api_key or local_env.get("LLM_API_KEY", "")).strip()
-        if not api_key:
+        base_url_for_check = (self.base_url or local_env.get("LLM_BASE_URL", "")).strip()
+        is_local = any(h in base_url_for_check for h in ("localhost", "127.0.0.1", "0.0.0.0"))
+        if not api_key and not is_local:
             print(f"ERROR: LLM_API_KEY is empty. Set it in {ENV_FILE} or export LLM_API_KEY.", file=sys.stderr)
             sys.exit(2)
 
