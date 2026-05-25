@@ -9,6 +9,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Optional, Sequence
 
+from llm_common.llm_infer.api_info.dataclass_ import ApiConfig
 
 ROOT = Path(__file__).resolve().parents[0]
 ENV_FILE = Path(os.environ.get("ENV_FILE", ROOT / ".env"))
@@ -215,10 +216,15 @@ class CallOpenaiInput(object):
 
 def call_openai(
         input_: Optional[CallOpenaiInput]=None,
+        api_config: Optional[ApiConfig]=None,
         api_key: str=None, base_url: str=None, max_tokens: int=None, model: str=None, prompt: str=None,
         system_input: str=None, image_paths: Optional[Sequence[Any]]=None,
-        image_data_urls: Optional[Sequence[str]]=None, timeout: float=None
-, do_print_one_response_per_line=None, disable_maxtoken_hint=None) -> str:
+        image_data_urls: Optional[Sequence[str]]=None, timeout: float=None,
+        do_print_one_response_per_line=None, disable_maxtoken_hint=None) -> str:
+    if api_config is not None:
+        api_key = api_key or api_config.api_key
+        base_url = base_url or api_config.base_url
+        model = model or api_config.model
     if input_ is None:
         input_ = CallOpenaiInput(
                 api_key=api_key,

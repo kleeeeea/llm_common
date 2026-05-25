@@ -25,47 +25,47 @@ OUTPUT_SH = SCRIPT_DIR / "tmp" / "apicongif.sh"
 CONFIG_NAME = os.environ.get("API_CONFIG_NAME", "DEFAULT_JUDGE_API")
 
 
+#
+# def literal_keyword(call: ast.Call, name: str) -> str:
+#     for keyword in call.keywords:
+#         if keyword.arg == name:
+#             value = ast.literal_eval(keyword.value)
+#             if not isinstance(value, str):
+#                 raise TypeError(f"{name} must be a string literal")
+#             return value
+#     raise KeyError(f"Missing ApiConfig keyword: {name}")
 
-def literal_keyword(call: ast.Call, name: str) -> str:
-    for keyword in call.keywords:
-        if keyword.arg == name:
-            value = ast.literal_eval(keyword.value)
-            if not isinstance(value, str):
-                raise TypeError(f"{name} must be a string literal")
-            return value
-    raise KeyError(f"Missing ApiConfig keyword: {name}")
-
-
-def parse_api_configs(path: Path) -> dict[str, ApiConfig]:
-    tree = ast.parse(path.read_text(encoding="utf-8"), filename=str(path))
-    configs: dict[str, ApiConfig] = {}
-    aliases: dict[str, str] = {}
-
-    for node in tree.body:
-        if not isinstance(node, ast.Assign) or len(node.targets) != 1:
-            continue
-        target = node.targets[0]
-        if not isinstance(target, ast.Name):
-            continue
-
-        if (
-            isinstance(node.value, ast.Call)
-            and isinstance(node.value.func, ast.Name)
-            and node.value.func.id == "ApiConfig"
-        ):
-            configs[target.id] = ApiConfig(
-                base_url=literal_keyword(node.value, "base_url"),
-                api_key=literal_keyword(node.value, "api_key"),
-                model=literal_keyword(node.value, "model"),
-            )
-        elif isinstance(node.value, ast.Name):
-            aliases[target.id] = node.value.id
-
-    for alias, source in aliases.items():
-        if source in configs:
-            configs[alias] = configs[source]
-
-    return configs
+#
+# def parse_api_configs(path: Path) -> dict[str, ApiConfig]:
+#     tree = ast.parse(path.read_text(encoding="utf-8"), filename=str(path))
+#     configs: dict[str, ApiConfig] = {}
+#     aliases: dict[str, str] = {}
+#
+#     for node in tree.body:
+#         if not isinstance(node, ast.Assign) or len(node.targets) != 1:
+#             continue
+#         target = node.targets[0]
+#         if not isinstance(target, ast.Name):
+#             continue
+#
+#         if (
+#             isinstance(node.value, ast.Call)
+#             and isinstance(node.value.func, ast.Name)
+#             and node.value.func.id == "ApiConfig"
+#         ):
+#             configs[target.id] = ApiConfig(
+#                 base_url=literal_keyword(node.value, "base_url"),
+#                 api_key=literal_keyword(node.value, "api_key"),
+#                 model=literal_keyword(node.value, "model"),
+#             )
+#         elif isinstance(node.value, ast.Name):
+#             aliases[target.id] = node.value.id
+#
+#     for alias, source in aliases.items():
+#         if source in configs:
+#             configs[alias] = configs[source]
+#
+#     return configs
 
 
 def render_curl(config: ApiConfig) -> str:
