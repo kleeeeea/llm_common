@@ -5,14 +5,46 @@ import os
 import sys
 import urllib.error
 import urllib.request
-from dataclasses import dataclass
+from dataclasses import dataclass, field, replace
 from pathlib import Path
-from typing import Any, Optional, Sequence
+from typing import Any, Dict, Optional, Sequence
 
 from llm_common.llm_infer.api_info.dataclass_ import ApiConfig
 from llm_common.llm_infer.load_env import ENV_FILE, load_env_file, read_env_file, require_env
 
 api_innospark_cn_v_ = "https://api.innospark.cn/v1"
+
+
+@dataclass(frozen=True)
+class ModelSettings:
+    thinking: Dict[str, Any] = field(default_factory=lambda: {"type": "disabled"})
+    temperature: float = 0.1
+    stream: bool = True
+    system_input: Optional[str] = None
+    max_tokens: Optional[int] = None
+    disable_maxtoken_hint: bool = False
+    api_key: Optional[str] = None
+    base_url: Optional[str] = None
+    model: Optional[str] = None
+    timeout: Optional[float] = None
+
+    def resolve(self, local_env: dict) -> "ModelSettings":
+        api_key = (self.api_key or local_env.get("LLM_API_KEY", "")).strip()
+        base_url = (self.base_url or local_env.get("LLM_BASE_URL", api_innospark_cn_v_)).strip().rstrip("/")
+        model = (self.model or local_env.get("LLM_MODEL", "gemini-2.5-flash")).strip() or "gemini-2.5-flash"
+        timeout = self.timeout if self.timeout is not None else float(local_env.get("TIMEOUT_SECONDS", "60"))
+        require_positive_number("timeout", timeout)
+        is_local = any(h in base_url for h in ("localhost", "127.0.0.1", "0.0.0.0"))
+        if not api_key and not is_local:
+            print(f"ERROR: LLM_API_KEY is empty. Set it in {ENV_FILE} or export LLM_API_KEY.", file=sys.stderr)
+            sys.exit(2)
+        max_tokens = self.max_tokens if self.max_tokens is not None else int(local_env.get("MAX_TOKENS", "16000"))
+        require_positive_number("max_tokens", max_tokens)
+        system_input = (self.system_input or local_env.get("SYSTEM_INPUT", "你是测试助手。回答必须按照字数要求。")).strip()
+        if not self.disable_maxtoken_hint:
+            system_input += f"\nTotal token budget including reasoning is: {max_tokens}. Reasoning budget can not be more than {int(max_tokens * 0.8)} tokens"
+        return replace(self, api_key=api_key, base_url=base_url, model=model, timeout=timeout,
+                       max_tokens=max_tokens, system_input=system_input)
 
 
 def stream_sse_lines(response):
@@ -31,8 +63,6 @@ def stream_sse_lines(response):
     for line in buffer.splitlines():
         if line.startswith("data: "):
             yield line[6:].strip()
-
-
 
 
 def require_positive_number(name: str, value: float) -> None:
@@ -141,102 +171,87 @@ def main() -> int:
 
 @dataclass(frozen=True)
 class CallOpenaiInput(object):
-    api_key: Optional[str] = None
-    base_url: Optional[str] = None
-    max_tokens: Optional[int] = None
-    model: Optional[str] = None
     prompt: Optional[str] = None
-    system_input: Optional[str] = None
     image_paths: Optional[Sequence[Any]] = None
     image_data_urls: Optional[Sequence[str]] = None
-    timeout: Optional[float] = None
-    disable_maxtoken_hint: Optional[bool] = None
+    model_settings: Optional[ModelSettings] = None
 
     def __post_init__(self) -> None:
         local_env = read_env_file(ENV_FILE)
         local_env.update(os.environ)
 
-        api_key = (self.api_key or local_env.get("LLM_API_KEY", "")).strip()
-        base_url_for_check = (self.base_url or local_env.get("LLM_BASE_URL", "")).strip()
-        is_local = any(h in base_url_for_check for h in ("localhost", "127.0.0.1", "0.0.0.0"))
-        if not api_key and not is_local:
-            print(f"ERROR: LLM_API_KEY is empty. Set it in {ENV_FILE} or export LLM_API_KEY.", file=sys.stderr)
-            sys.exit(2)
+        ms = (self.model_settings if self.model_settings is not None else ModelSettings()).resolve(local_env)
 
-        #
-        max_tokens = self.max_tokens if self.max_tokens is not None else int(local_env.get("MAX_TOKENS", "16000"))
-        system_input = (self.system_input or local_env.get("SYSTEM_INPUT", "你是测试助手。回答必须按照字数要求。")).strip()
-        if max_tokens is not None and not self.disable_maxtoken_hint:
-            system_input += f"\nTotal token budget including reasoning is: {max_tokens}. Reasoning budget can not be more than {int(max_tokens * 0.8)} tokens"
-        object.__setattr__(self, "api_key", api_key)
-        object.__setattr__(self, "base_url", (self.base_url or local_env.get("LLM_BASE_URL", api_innospark_cn_v_)).strip().rstrip("/"))
-        object.__setattr__(self, "model", (self.model or local_env.get("LLM_MODEL", "gemini-2.5-flash")).strip() or "gemini-2.5-flash")
         object.__setattr__(self, "prompt", (self.prompt or local_env.get("PROMPT", "用中文输出一百个字的笑话")).strip())
-        object.__setattr__(self, "system_input", system_input)
-        image_data_urls = [image_data_url.strip() for image_data_url in (self.image_data_urls or ()) if image_data_url.strip()]
-        image_data_urls.extend(image_path_to_data_url(image_path) for image_path in (self.image_paths or ()))
+        image_data_urls = [u.strip() for u in (self.image_data_urls or ()) if u.strip()]
+        image_data_urls.extend(image_path_to_data_url(p) for p in (self.image_paths or ()))
         object.__setattr__(self, "image_data_urls", tuple(image_data_urls))
-        object.__setattr__(self, "timeout", self.timeout if self.timeout is not None else float(local_env.get("TIMEOUT_SECONDS", "60")))
-        object.__setattr__(self, "max_tokens", max_tokens)
-        require_positive_number("timeout", self.timeout)
-        require_positive_number("max_tokens", self.max_tokens)
+        object.__setattr__(self, "model_settings", ms)
         if not self.prompt:
             raise ValueError("prompt is empty")
-        if not self.system_input:
+        if not ms.system_input:
             raise ValueError("system_input is empty")
 
 def call_openai(
         input_: Optional[CallOpenaiInput]=None,
         api_config: Optional[ApiConfig]=None,
-        api_key: str=None, base_url: str=None, max_tokens: int=None, model: str=None, prompt: str=None,
+        api_key: str=None, base_url: str=None, max_tokens: int=None,
+        model: str=None, prompt: str=None,
         system_input: str=None, image_paths: Optional[Sequence[Any]]=None,
         image_data_urls: Optional[Sequence[str]]=None, timeout: float=None,
-        do_print_one_response_per_line=None, disable_maxtoken_hint=None) -> str:
-    if api_config is not None:
-        api_key = api_key or api_config.api_key
-        base_url = base_url or api_config.base_url
-        model = model or api_config.model
+        do_print_one_response_per_line=None, disable_maxtoken_hint=None,
+        model_settings: Optional[ModelSettings]=None,
+) -> str:
     if input_ is None:
+        if api_config is not None:
+            api_key = api_key or api_config.api_key
+            base_url = base_url or api_config.base_url
+            model = model or api_config.model
+        if model_settings is None:
+            model_settings = ModelSettings()
+        model_settings = replace(model_settings,
+                                 api_key=model_settings.api_key or api_key,
+                                 base_url=model_settings.base_url or base_url,
+                                 model=model_settings.model or model,
+                                 timeout=model_settings.timeout or timeout,
+                                 system_input=model_settings.system_input or system_input,
+                                 max_tokens=model_settings.max_tokens or max_tokens,
+                                 disable_maxtoken_hint=model_settings.disable_maxtoken_hint or bool(disable_maxtoken_hint))
         input_ = CallOpenaiInput(
-                api_key=api_key,
-                base_url=base_url,
-                max_tokens=max_tokens,
-                model=model,
                 prompt=prompt,
-                system_input=system_input,
                 image_paths=image_paths,
                 image_data_urls=image_data_urls,
-                timeout=timeout,
-                disable_maxtoken_hint=disable_maxtoken_hint,
+                model_settings=model_settings,
         )
+    ms = input_.model_settings
     body = {
-            "model"      : input_.model,
-    "thinking": {"type": "disabled"},   # 关键：强制关闭思考
-            "stream"     : True,
-            "temperature": 0.1,
-            "max_tokens" : input_.max_tokens,
+            "model"      : ms.model,
+            "thinking"   : ms.thinking,
+            "temperature": ms.temperature,
+            "stream"     : ms.stream,
+            "max_tokens" : ms.max_tokens,
             "messages"   : [
-                    {"role": "system", "content": input_.system_input},
+                    {"role": "system", "content": ms.system_input},
                     {"role": "user", "content": build_user_content(input_.prompt, input_.image_data_urls)},
             ],
     }
 
-    print('*' * 50 + f'''\n{input_.system_input}\n^^^(input_.system_input)^^^\n''' + '''\nat:\nllm_common/llm_infer/call.py:242\n''' + '*' * 50)
+    print('*' * 50 + f'''\n{ms.system_input}\n^^^(ms.system_input)^^^\n''' + '''\nat:\nllm_common/llm_infer/call.py:242\n''' + '*' * 50)
     print('*' * 50 + f'''\n{input_.prompt}\n^^^(input_.prompt)^^^\n''' + '''\nat:\nllm_common/llm_infer/call.py:243\n''' + '*' * 50)
 
-    url = build_chat_completions_url(input_.base_url)
+    url = build_chat_completions_url(ms.base_url)
     request = urllib.request.Request(
             url,
             data=json.dumps(body, ensure_ascii=False).encode("utf-8"),
             headers={
-                    "Authorization": f"Bearer {input_.api_key}",
+                    "Authorization": f"Bearer {ms.api_key}",
                     "Content-Type" : "application/json",
             },
             method="POST",
     )
 
     print(f"POST {url}")
-    print(f"model={input_.model} stream=true")
+    print(f"model={ms.model} stream=true")
 
     chunks: list[str] = []
     reasoning_chunks: list[str] = []
@@ -254,7 +269,7 @@ def call_openai(
     #  '{"id":"8fe1630f301c48a3bf7c4600cd5b17bc","object":"chat.completion.chunk","created":1779609667,"model":"Kimi-K2.6","choices":[{"index":0,"delta":{"role":null,"content":null,"reasoning_content":"100","tool_calls":null},"logprobs":null,"finish_reason":null,"matched_stop":null}],"usage":null}',
     # 需要收集推理模型的输入
     try:
-        with urllib.request.urlopen(request, timeout=input_.timeout) as response:
+        with urllib.request.urlopen(request, timeout=ms.timeout) as response:
             content_type = response.headers.get("content-type", "")
             print(f"HTTP {response.status} content-type={content_type}")
             if "text/event-stream" not in content_type:
