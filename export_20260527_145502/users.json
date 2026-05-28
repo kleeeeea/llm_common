@@ -1,0 +1,92 @@
+[
+  {
+    "id": "d340203c-ec71-415b-ae2b-0ece758e6c2d",
+    "username": "user1",
+    "password_hash": "$2b$10$sxMbU3VN6.PLG1nCfUIcAevvwgbLxBGSoUvCC6O8aEJ0XGMKqr/ZS",
+    "created_at": "2026-04-30T07:40:04.513Z"
+  },
+  {
+    "id": "ce3b48b6-2907-4a34-92e6-0822d9e8464f",
+    "username": "user2",
+    "password_hash": "$2b$10$sxMbU3VN6.PLG1nCfUIcAevvwgbLxBGSoUvCC6O8aEJ0XGMKqr/ZS",
+    "created_at": "2026-04-30T07:40:04.538Z"
+  },
+  {
+    "id": "c5c42bac-04d1-49d6-bd81-4ba9a980cfd0",
+    "username": "user3",
+    "password_hash": "$2b$10$sxMbU3VN6.PLG1nCfUIcAevvwgbLxBGSoUvCC6O8aEJ0XGMKqr/ZS",
+    "created_at": "2026-04-30T07:40:04.543Z"
+  },
+  {
+    "id": "e30e0991-cc0b-4903-8067-46536585183f",
+    "username": "user4",
+    "password_hash": "$2b$10$sxMbU3VN6.PLG1nCfUIcAevvwgbLxBGSoUvCC6O8aEJ0XGMKqr/ZS",
+    "created_at": "2026-04-30T07:40:04.548Z"
+  },
+  {
+    "id": "ae5beb78-00b6-4fdf-8803-02f921f65b45",
+    "username": "user5",
+    "password_hash": "$2b$10$sxMbU3VN6.PLG1nCfUIcAevvwgbLxBGSoUvCC6O8aEJ0XGMKqr/ZS",
+    "created_at": "2026-04-30T07:40:04.559Z"
+  },
+  {
+    "id": "483e9a90-aa26-45db-9dbe-714db3ca6008",
+    "username": "user6",
+    "password_hash": "$2b$10$sxMbU3VN6.PLG1nCfUIcAevvwgbLxBGSoUvCC6O8aEJ0XGMKqr/ZS",
+    "created_at": "2026-04-30T07:40:04.564Z"
+  },
+  {
+    "id": "241265b4-1035-4d5b-8fa2-9d72305ad1ee",
+    "username": "user7",
+    "password_hash": "$2b$10$sxMbU3VN6.PLG1nCfUIcAevvwgbLxBGSoUvCC6O8aEJ0XGMKqr/ZS",
+    "created_at": "2026-04-30T07:40:04.568Z"
+  },
+  {
+    "id": "3f24c36e-ab12-4c26-bc48-88df7c5604d9",
+    "username": "user8",
+    "password_hash": "$2b$10$sxMbU3VN6.PLG1nCfUIcAevvwgbLxBGSoUvCC6O8aEJ0XGMKqr/ZS",
+    "created_at": "2026-04-30T07:40:04.571Z"
+  },
+  {
+    "id": "edefb9c7-59f3-4f87-8601-660f0b50014c",
+    "username": "user9",
+    "password_hash": "$2b$10$sxMbU3VN6.PLG1nCfUIcAevvwgbLxBGSoUvCC6O8aEJ0XGMKqr/ZS",
+    "created_at": "2026-04-30T07:40:04.573Z"
+  },
+  {
+    "id": "53f03fb5-493a-4a97-8a02-0501273186ae",
+    "username": "user10",
+    "password_hash": "$2b$10$sxMbU3VN6.PLG1nCfUIcAevvwgbLxBGSoUvCC6O8aEJ0XGMKqr/ZS",
+    "created_at": "2026-04-30T07:40:04.577Z"
+  },
+  {
+    "id": "dfc5891d-5607-485a-b110-1223fb5ec83a",
+    "username": "user11",
+    "password_hash": "$2b$10$sxMbU3VN6.PLG1nCfUIcAevvwgbLxBGSoUvCC6O8aEJ0XGMKqr/ZS",
+    "created_at": "2026-04-30T07:40:04.582Z"
+  },
+  {
+    "id": "f4dde0c6-4a84-4a50-9b95-be0bb5cd25f9",
+    "username": "user12",
+    "password_hash": "$2b$10$sxMbU3VN6.PLG1nCfUIcAevvwgbLxBGSoUvCC6O8aEJ0XGMKqr/ZS",
+    "created_at": "2026-04-30T07:40:04.583Z"
+  },
+  {
+    "id": "3ecb9c07-e37e-4521-a1b0-1d5e092cd9d2",
+    "username": "user13",
+    "password_hash": "$2b$10$sxMbU3VN6.PLG1nCfUIcAevvwgbLxBGSoUvCC6O8aEJ0XGMKqr/ZS",
+    "created_at": "2026-04-30T07:40:04.585Z"
+  },
+  {
+    "id": "00773524-19a9-40f3-90ff-ebc0a8b595ac",
+    "username": "user14",
+    "password_hash": "$2b$10$sxMbU3VN6.PLG1nCfUIcAevvwgbLxBGSoUvCC6O8aEJ0XGMKqr/ZS",
+    "created_at": "2026-04-30T07:40:04.586Z"
+  },
+  {
+    "id": "ed695004-4ef1-4390-881c-2f6e11ed1817",
+    "username": "user15",
+    "password_hash": "$2b$10$sxMbU3VN6.PLG1nCfUIcAevvwgbLxBGSoUvCC6O8aEJ0XGMKqr/ZS",
+    "created_at": "2026-04-30T07:40:04.588Z"
+  }
+]

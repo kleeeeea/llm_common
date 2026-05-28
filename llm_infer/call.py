@@ -23,12 +23,26 @@ class ModelSettings:
     system_input: Optional[str] = None
     max_tokens: Optional[int] = None
     disable_maxtoken_hint: bool = False
+    # Pass an ApiConfig in `api` to populate api_key / base_url / model in one
+    # shot. Explicit values for those fields still win — they're used as
+    # per-field overrides on top of the ApiConfig.
+    api: Optional[ApiConfig] = None
     api_key: Optional[str] = None
     base_url: Optional[str] = None
     model: Optional[str] = None
     timeout: Optional[float] = None
 
-    def resolve(self, local_env: dict) -> "ModelSettings":
+    def __post_init__(self):
+        if self.api is not None:
+            if self.api_key is None:
+                object.__setattr__(self, 'api_key', self.api.api_key)
+            if self.base_url is None:
+                object.__setattr__(self, 'base_url', self.api.base_url)
+            if self.model is None:
+                object.__setattr__(self, 'model', self.api.model)
+
+        local_env = read_env_file(ENV_FILE)
+        local_env.update(os.environ)
         api_key = (self.api_key or local_env.get("LLM_API_KEY", "")).strip()
         base_url = (self.base_url or local_env.get("LLM_BASE_URL", api_innospark_cn_v_)).strip().rstrip("/")
         model = (self.model or local_env.get("LLM_MODEL", "gemini-2.5-flash")).strip() or "gemini-2.5-flash"
@@ -38,13 +52,23 @@ class ModelSettings:
         if not api_key and not is_local:
             print(f"ERROR: LLM_API_KEY is empty. Set it in {ENV_FILE} or export LLM_API_KEY.", file=sys.stderr)
             sys.exit(2)
-        max_tokens = self.max_tokens if self.max_tokens is not None else int(local_env.get("MAX_TOKENS", "16000"))
+        max_tokens = self.max_tokens if self.max_tokens is not None else int(local_env.get("MAX_TOKENS", "12000"))
         require_positive_number("max_tokens", max_tokens)
         system_input = (self.system_input or local_env.get("SYSTEM_INPUT", "你是测试助手。回答必须按照字数要求。")).strip()
-        if not self.disable_maxtoken_hint:
-            system_input += f"\nTotal token budget including reasoning is: {max_tokens}. Reasoning budget can not be more than {int(max_tokens * 0.8)} tokens"
-        return replace(self, api_key=api_key, base_url=base_url, model=model, timeout=timeout,
-                       max_tokens=max_tokens, system_input=system_input)
+        # Idempotent: `replace()` (used in call_openai) re-runs __post_init__, so
+        # only append the hint if it isn't already present.
+        hint_marker = "Total token budget including reasoning is:"
+        if not self.disable_maxtoken_hint and hint_marker not in system_input:
+            system_input += f"\n{hint_marker} {max_tokens}. Reasoning budget can not be more than {int(max_tokens * 0.8)} tokens"
+
+        # Frozen dataclass — write resolved values back in place (no `replace`,
+        # which would recurse through __post_init__).
+        object.__setattr__(self, "api_key", api_key)
+        object.__setattr__(self, "base_url", base_url)
+        object.__setattr__(self, "model", model)
+        object.__setattr__(self, "timeout", timeout)
+        object.__setattr__(self, "max_tokens", max_tokens)
+        object.__setattr__(self, "system_input", system_input)
 
 
 def stream_sse_lines(response):
@@ -169,20 +193,38 @@ def main() -> int:
     print(text)
     return 0
 
+class LlmResponse(str):
+    """A ``str`` subclass that also carries token ``usage`` and ``reasoning``.
+
+    ``call_openai`` returns this so existing callers that treat the result as a
+    plain string keep working unchanged, while callers that want token
+    accounting can read ``.usage`` — an OpenAI-style dict
+    ``{"prompt_tokens", "completion_tokens", "total_tokens", ...}`` or ``None``
+    when the server did not report it.
+    """
+
+    usage: Optional[Dict[str, Any]]
+    reasoning: Optional[str]
+
+    def __new__(cls, text: str, usage: Optional[Dict[str, Any]] = None,
+                reasoning: Optional[str] = None) -> "LlmResponse":
+        obj = super().__new__(cls, text)
+        obj.usage = usage
+        obj.reasoning = reasoning
+        return obj
+
+
 @dataclass(frozen=True)
 class CallOpenaiInput(object):
-    prompt: Optional[str] = None
+    prompt: str
     image_paths: Optional[Sequence[Any]] = None
     image_data_urls: Optional[Sequence[str]] = None
     model_settings: Optional[ModelSettings] = None
 
     def __post_init__(self) -> None:
-        local_env = read_env_file(ENV_FILE)
-        local_env.update(os.environ)
 
-        ms = (self.model_settings if self.model_settings is not None else ModelSettings()).resolve(local_env)
+        ms = (self.model_settings if self.model_settings is not None else ModelSettings())
 
-        object.__setattr__(self, "prompt", (self.prompt or local_env.get("PROMPT", "用中文输出一百个字的笑话")).strip())
         image_data_urls = [u.strip() for u in (self.image_data_urls or ()) if u.strip()]
         image_data_urls.extend(image_path_to_data_url(p) for p in (self.image_paths or ()))
         object.__setattr__(self, "image_data_urls", tuple(image_data_urls))
@@ -229,6 +271,9 @@ def call_openai(
             "thinking"   : ms.thinking,
             "temperature": ms.temperature,
             "stream"     : ms.stream,
+            # ask OpenAI-compatible servers to emit a final usage-only chunk
+            # (choices=[], usage={...}) at the end of the stream.
+            "stream_options": {"include_usage": True},
             "max_tokens" : ms.max_tokens,
             "messages"   : [
                     {"role": "system", "content": ms.system_input},
@@ -256,6 +301,7 @@ def call_openai(
     chunks: list[str] = []
     reasoning_chunks: list[str] = []
     all_payloads: list[str] = []
+    usage: Optional[Dict[str, Any]] = None
     #     Out[1]:
     # ['{"id":"8fe1630f301c48a3bf7c4600cd5b17bc","object":"chat.completion.chunk","created":1779609667,"model":"Kimi-K2.6","choices":[{"index":0,"delta":{"role":"assistant","content":"","reasoning_content":null,"tool_calls":null},"logprobs":null,"finish_reason":null,"matched_stop":null}],"usage":null}',
     #  '{"id":"8fe1630f301c48a3bf7c4600cd5b17bc","object":"chat.completion.chunk","created":1779609667,"model":"Kimi-K2.6","choices":[{"index":0,"delta":{"role":null,"content":null,"reasoning_content":"The","tool_calls":null},"logprobs":null,"finish_reason":null,"matched_stop":null}],"usage":null}',
@@ -285,6 +331,10 @@ def call_openai(
                     data = json.loads(payload)
                 except json.JSONDecodeError:
                     continue
+                # the usage-only trailer chunk (and some servers on every chunk)
+                # carries token counts; keep the last non-null one.
+                if isinstance(data, dict) and data.get("usage"):
+                    usage = data["usage"]
                 text = extract_stream_text(data)
                 reasoning_text = extract_stream_reasoning_text(data)
                 all_payloads.append(payload)
@@ -314,7 +364,10 @@ def call_openai(
     if not text:
         print("ERROR: stream completed but produced no text", file=sys.stderr)
         raise Exception('llm error')
-    return text
+    # Return a str subclass: behaves like the text for existing callers, but also
+    # exposes `.usage` (token counts) and `.reasoning` for those who want them.
+    reasoning = "".join(reasoning_chunks).strip() or None
+    return LlmResponse(text, usage=usage, reasoning=reasoning)
 
 
 if __name__ == "__main__":

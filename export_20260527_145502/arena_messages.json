@@ -1,0 +1,452 @@
+[
+  {
+    "id": "842d7d10-8f66-403b-b9ed-43894cba4321",
+    "thread_id": "cde469c7-f81f-4911-89db-aa7ad6eba9af",
+    "user_id": "d340203c-ec71-415b-ae2b-0ece758e6c2d",
+    "side": "shared",
+    "role": "user",
+    "content": "hi",
+    "created_at": "2026-05-20T09:40:29.699Z"
+  },
+  {
+    "id": "0121c492-e43b-4f4a-aa04-98d1de51785f",
+    "thread_id": "cde469c7-f81f-4911-89db-aa7ad6eba9af",
+    "user_id": "d340203c-ec71-415b-ae2b-0ece758e6c2d",
+    "side": "baseline",
+    "role": "assistant",
+    "content": "你好！有什么我可以帮助你的吗？",
+    "created_at": "2026-05-20T09:40:32.627Z"
+  },
+  {
+    "id": "be922497-a9ca-4646-8f46-4a3496296d4d",
+    "thread_id": "cde469c7-f81f-4911-89db-aa7ad6eba9af",
+    "user_id": "d340203c-ec71-415b-ae2b-0ece758e6c2d",
+    "side": "enhanced",
+    "role": "assistant",
+    "content": "你好！很高兴见到你！\n\n想听个笑话放松一下吗？我可以给你讲一个哦！😊",
+    "created_at": "2026-05-20T09:40:32.627Z"
+  },
+  {
+    "id": "f7fb10e1-e776-4a1c-8002-dbc4712d66df",
+    "thread_id": "cde469c7-f81f-4911-89db-aa7ad6eba9af",
+    "user_id": "d340203c-ec71-415b-ae2b-0ece758e6c2d",
+    "side": "shared",
+    "role": "user",
+    "content": "讲个笑话",
+    "created_at": "2026-05-20T10:27:21.836Z"
+  },
+  {
+    "id": "7d419a65-9468-423d-a3ad-34051b1a7197",
+    "thread_id": "cde469c7-f81f-4911-89db-aa7ad6eba9af",
+    "user_id": "d340203c-ec71-415b-ae2b-0ece758e6c2d",
+    "side": "baseline",
+    "role": "assistant",
+    "content": "好的，来一个：\n\n为什么小明总是考零分？\n因为他每次考试都交白卷！",
+    "created_at": "2026-05-20T10:27:25.722Z"
+  },
+  {
+    "id": "fa0466a1-0ac1-48e9-9269-7e7604385261",
+    "thread_id": "cde469c7-f81f-4911-89db-aa7ad6eba9af",
+    "user_id": "d340203c-ec71-415b-ae2b-0ece758e6c2d",
+    "side": "enhanced",
+    "role": "assistant",
+    "content": "好的，来听个笑话：\n\n小明对妈妈说：“妈，我今天在学校又学会了一个新词！”\n妈妈问：“什么词啊？”\n小明得意地说：“‘不耻下问’！”\n妈妈很高兴：“真棒！那你知道是什么意思吗？”\n小明挠挠头：“不知道，所以我来问你啊！”",
+    "created_at": "2026-05-20T10:27:25.722Z"
+  },
+  {
+    "id": "8e470be2-b37a-4666-97ab-16723c8ff6bd",
+    "thread_id": "cde469c7-f81f-4911-89db-aa7ad6eba9af",
+    "user_id": "d340203c-ec71-415b-ae2b-0ece758e6c2d",
+    "side": "shared",
+    "role": "user",
+    "content": "hi",
+    "created_at": "2026-05-20T10:56:23.165Z"
+  },
+  {
+    "id": "ff3ee949-9c73-457f-aadb-e28fa67c6b60",
+    "thread_id": "cde469c7-f81f-4911-89db-aa7ad6eba9af",
+    "user_id": "d340203c-ec71-415b-ae2b-0ece758e6c2d",
+    "side": "baseline",
+    "role": "assistant",
+    "content": "你好！有什么我可以帮助你的吗？",
+    "created_at": "2026-05-20T10:56:25.721Z"
+  },
+  {
+    "id": "9cf3ee44-e535-4e25-973e-829ba33546e6",
+    "thread_id": "cde469c7-f81f-4911-89db-aa7ad6eba9af",
+    "user_id": "d340203c-ec71-415b-ae2b-0ece758e6c2d",
+    "side": "enhanced",
+    "role": "assistant",
+    "content": "你好呀！又见面了！\n\n想听个笑话，让心情更轻松愉快吗？我随时准备着哦！😄",
+    "created_at": "2026-05-20T10:56:25.721Z"
+  },
+  {
+    "id": "12cfc6d6-72e8-4b64-aa32-0bac96537b20",
+    "thread_id": "cde469c7-f81f-4911-89db-aa7ad6eba9af",
+    "user_id": "d340203c-ec71-415b-ae2b-0ece758e6c2d",
+    "side": "shared",
+    "role": "user",
+    "content": "a",
+    "created_at": "2026-05-20T10:57:48.943Z"
+  },
+  {
+    "id": "9de91bc1-309a-49c2-8db4-5c70d8317556",
+    "thread_id": "cde469c7-f81f-4911-89db-aa7ad6eba9af",
+    "user_id": "d340203c-ec71-415b-ae2b-0ece758e6c2d",
+    "side": "baseline",
+    "role": "assistant",
+    "content": "您好！有什么我可以帮助你的吗？",
+    "created_at": "2026-05-20T10:57:53.239Z"
+  },
+  {
+    "id": "2bf0d452-8cb1-4cc8-bf56-a5268c380237",
+    "thread_id": "cde469c7-f81f-4911-89db-aa7ad6eba9af",
+    "user_id": "d340203c-ec71-415b-ae2b-0ece758e6c2d",
+    "side": "enhanced",
+    "role": "assistant",
+    "content": "你好呀！有什么可以帮你的吗？\n\n如果你想听个笑话，随时告诉我哦！我有很多有趣的笑话等着分享呢！😄",
+    "created_at": "2026-05-20T10:57:53.239Z"
+  },
+  {
+    "id": "1752cde9-010d-4cfd-852a-cde822899bbc",
+    "thread_id": "cde469c7-f81f-4911-89db-aa7ad6eba9af",
+    "user_id": "d340203c-ec71-415b-ae2b-0ece758e6c2d",
+    "side": "shared",
+    "role": "user",
+    "content": "a",
+    "created_at": "2026-05-21T01:41:26.571Z"
+  },
+  {
+    "id": "3e257ae1-22ba-4ad5-9adb-18431444879e",
+    "thread_id": "cde469c7-f81f-4911-89db-aa7ad6eba9af",
+    "user_id": "d340203c-ec71-415b-ae2b-0ece758e6c2d",
+    "side": "baseline",
+    "role": "assistant",
+    "content": "您好！有什么我可以帮助你的吗？",
+    "created_at": "2026-05-21T01:41:29.256Z"
+  },
+  {
+    "id": "0ee318dc-012d-426c-8a41-7147c8e9fc2c",
+    "thread_id": "cde469c7-f81f-4911-89db-aa7ad6eba9af",
+    "user_id": "d340203c-ec71-415b-ae2b-0ece758e6c2d",
+    "side": "enhanced",
+    "role": "assistant",
+    "content": "你好呀！又见面了！\n\n如果你想听个笑话，随时告诉我哦！我有很多有趣的笑话等着分享呢！😄",
+    "created_at": "2026-05-21T01:41:29.256Z"
+  },
+  {
+    "id": "fe1c19b2-818c-4cb1-bcc8-5005621e250b",
+    "thread_id": "cde469c7-f81f-4911-89db-aa7ad6eba9af",
+    "user_id": "d340203c-ec71-415b-ae2b-0ece758e6c2d",
+    "side": "shared",
+    "role": "user",
+    "content": "讲个笑话",
+    "created_at": "2026-05-21T01:41:37.992Z"
+  },
+  {
+    "id": "f6b0b6e7-f209-4c5a-a258-5ac5ce2cdd86",
+    "thread_id": "cde469c7-f81f-4911-89db-aa7ad6eba9af",
+    "user_id": "d340203c-ec71-415b-ae2b-0ece758e6c2d",
+    "side": "baseline",
+    "role": "assistant",
+    "content": "好的，再来一个：\n\n小明问爸爸：“爸爸，‘一贫如洗’是什么意思？”\n爸爸说：“就是穷得什么都没有了。”\n小明又问：“那我们家是‘一贫如洗’吗？”\n爸爸叹了口气：“不，我们家是‘一贫如洗’，还带点‘家徒四壁’。”",
+    "created_at": "2026-05-21T01:41:41.038Z"
+  },
+  {
+    "id": "845a9fe0-ded3-4abd-be40-caf3c30b6d90",
+    "thread_id": "cde469c7-f81f-4911-89db-aa7ad6eba9af",
+    "user_id": "d340203c-ec71-415b-ae2b-0ece758e6c2d",
+    "side": "enhanced",
+    "role": "assistant",
+    "content": "没问题！来听一个：\n\n一个程序员去面试，面试官问：“你有什么特长？”\n程序员说：“我会编程，还会修电脑。”\n面试官又问：“那有什么爱好吗？”\n程序员想了想说：“爱好就是把修好的电脑再弄坏，然后重新修一遍。”\n面试官：“……”\n\n哈哈，希望你喜欢这个！想再听一个吗？😄",
+    "created_at": "2026-05-21T01:41:41.038Z"
+  },
+  {
+    "id": "9e43ba7a-adc7-4d7d-b424-86342af219d9",
+    "thread_id": "cde469c7-f81f-4911-89db-aa7ad6eba9af",
+    "user_id": "d340203c-ec71-415b-ae2b-0ece758e6c2d",
+    "side": "shared",
+    "role": "user",
+    "content": "再讲个笑话",
+    "created_at": "2026-05-21T01:41:55.935Z"
+  },
+  {
+    "id": "c580bcf8-c902-4458-b386-09efe589ed47",
+    "thread_id": "cde469c7-f81f-4911-89db-aa7ad6eba9af",
+    "user_id": "d340203c-ec71-415b-ae2b-0ece758e6c2d",
+    "side": "baseline",
+    "role": "assistant",
+    "content": "好的，再来一个：\n\n老师问小明：“你为什么上课老是睡觉？”\n小明说：“我没睡觉啊！”\n老师说：“那你为什么闭着眼睛？”\n小明说：“我闭着眼睛是为了更好地听课！”\n老师：“那你为什么还打呼噜？”\n小明：“我那是为了让老师知道我听得很认真，在思考！”",
+    "created_at": "2026-05-21T01:41:58.447Z"
+  },
+  {
+    "id": "96f08ab0-dff2-495b-8ada-62307a8acba4",
+    "thread_id": "cde469c7-f81f-4911-89db-aa7ad6eba9af",
+    "user_id": "d340203c-ec71-415b-ae2b-0ece758e6c2d",
+    "side": "enhanced",
+    "role": "assistant",
+    "content": "没问题！再来一个：\n\n老师问小明：“你为什么上课老是睡觉？”\n小明说：“因为我晚上睡不着。”\n老师：“那你晚上为什么睡不着？”\n小明：“因为我白天睡太多了。”\n\n是不是有点道理呢？😂",
+    "created_at": "2026-05-21T01:41:58.447Z"
+  },
+  {
+    "id": "e7988a93-ff76-4e2b-9ed2-2e1ce94efd0f",
+    "thread_id": "cde469c7-f81f-4911-89db-aa7ad6eba9af",
+    "user_id": "d340203c-ec71-415b-ae2b-0ece758e6c2d",
+    "side": "shared",
+    "role": "user",
+    "content": "a",
+    "created_at": "2026-05-23T02:48:49.172Z"
+  },
+  {
+    "id": "0ac6e7c4-bdf6-4c66-ac4a-8fbfa612f9d0",
+    "thread_id": "cde469c7-f81f-4911-89db-aa7ad6eba9af",
+    "user_id": "d340203c-ec71-415b-ae2b-0ece758e6c2d",
+    "side": "baseline",
+    "role": "assistant",
+    "content": "您好！有什么我可以帮助你的吗？",
+    "created_at": "2026-05-23T02:48:51.573Z"
+  },
+  {
+    "id": "7d8246de-0a0c-4bc2-a754-f80241074ed3",
+    "thread_id": "cde469c7-f81f-4911-89db-aa7ad6eba9af",
+    "user_id": "d340203c-ec71-415b-ae2b-0ece758e6c2d",
+    "side": "enhanced",
+    "role": "assistant",
+    "content": "你好呀！有什么可以帮你的吗？\n\n如果你想听个笑话，随时告诉我哦！我有很多有趣的笑话等着分享呢！😄",
+    "created_at": "2026-05-23T02:48:51.573Z"
+  },
+  {
+    "id": "7e61d057-f707-485f-a2ba-8db81c6804d1",
+    "thread_id": "cde469c7-f81f-4911-89db-aa7ad6eba9af",
+    "user_id": "d340203c-ec71-415b-ae2b-0ece758e6c2d",
+    "side": "shared",
+    "role": "user",
+    "content": "a",
+    "created_at": "2026-05-23T02:55:16.411Z"
+  },
+  {
+    "id": "d82c7c5c-2624-45a0-bcd7-b06f734b276e",
+    "thread_id": "cde469c7-f81f-4911-89db-aa7ad6eba9af",
+    "user_id": "d340203c-ec71-415b-ae2b-0ece758e6c2d",
+    "side": "baseline",
+    "role": "assistant",
+    "content": "您好！有什么我可以帮助你的吗？",
+    "created_at": "2026-05-23T02:55:18.875Z"
+  },
+  {
+    "id": "55236423-da7d-4102-9d2a-c8e3dc28bd06",
+    "thread_id": "cde469c7-f81f-4911-89db-aa7ad6eba9af",
+    "user_id": "d340203c-ec71-415b-ae2b-0ece758e6c2d",
+    "side": "enhanced",
+    "role": "assistant",
+    "content": "你好呀！又见面了！\n\n如果你想听个笑话，随时告诉我哦！我有很多有趣的笑话等着分享呢！😄",
+    "created_at": "2026-05-23T02:55:18.875Z"
+  },
+  {
+    "id": "cedf564c-1d2b-437b-ba65-154261b3bb08",
+    "thread_id": "cde469c7-f81f-4911-89db-aa7ad6eba9af",
+    "user_id": "d340203c-ec71-415b-ae2b-0ece758e6c2d",
+    "side": "shared",
+    "role": "user",
+    "content": "a",
+    "created_at": "2026-05-23T03:05:12.151Z"
+  },
+  {
+    "id": "7e62aedb-c283-471d-8614-d7f0a384a975",
+    "thread_id": "cde469c7-f81f-4911-89db-aa7ad6eba9af",
+    "user_id": "d340203c-ec71-415b-ae2b-0ece758e6c2d",
+    "side": "baseline",
+    "role": "assistant",
+    "content": "您好！有什么我可以帮助你的吗？",
+    "created_at": "2026-05-23T03:05:16.128Z"
+  },
+  {
+    "id": "b0e246c8-ef29-4b3e-b26e-244008cbc485",
+    "thread_id": "cde469c7-f81f-4911-89db-aa7ad6eba9af",
+    "user_id": "d340203c-ec71-415b-ae2b-0ece758e6c2d",
+    "side": "enhanced",
+    "role": "assistant",
+    "content": "你好呀！有什么可以帮你的吗？\n\n如果你想听个笑话，随时告诉我哦！我有很多有趣的笑话等着分享呢！😄",
+    "created_at": "2026-05-23T03:05:16.128Z"
+  },
+  {
+    "id": "864dbe06-9ac0-4ae4-9621-c3b76653e9d3",
+    "thread_id": "cde469c7-f81f-4911-89db-aa7ad6eba9af",
+    "user_id": "d340203c-ec71-415b-ae2b-0ece758e6c2d",
+    "side": "shared",
+    "role": "user",
+    "content": "啊",
+    "created_at": "2026-05-23T03:46:53.863Z"
+  },
+  {
+    "id": "f1d49d84-a8d5-4390-8124-1f84d9438bcd",
+    "thread_id": "cde469c7-f81f-4911-89db-aa7ad6eba9af",
+    "user_id": "d340203c-ec71-415b-ae2b-0ece758e6c2d",
+    "side": "baseline",
+    "role": "assistant",
+    "content": "您好！有什么我可以帮助你的吗？",
+    "created_at": "2026-05-23T03:47:03.115Z"
+  },
+  {
+    "id": "e2b45e1f-f090-45f7-8e03-defda14c3be3",
+    "thread_id": "cde469c7-f81f-4911-89db-aa7ad6eba9af",
+    "user_id": "d340203c-ec71-415b-ae2b-0ece758e6c2d",
+    "side": "enhanced",
+    "role": "assistant",
+    "content": "你好呀！有什么可以帮你的吗？\n\n如果你想听个笑话，随时告诉我哦！我有很多有趣的笑话等着分享呢！😄",
+    "created_at": "2026-05-23T03:47:03.115Z"
+  },
+  {
+    "id": "e415e4dc-a799-471f-b3b3-8bc9c4d9d146",
+    "thread_id": "cde469c7-f81f-4911-89db-aa7ad6eba9af",
+    "user_id": "d340203c-ec71-415b-ae2b-0ece758e6c2d",
+    "side": "shared",
+    "role": "user",
+    "content": "啊",
+    "created_at": "2026-05-23T03:49:34.525Z"
+  },
+  {
+    "id": "408ead11-d323-4f11-9508-e6395b98234e",
+    "thread_id": "cde469c7-f81f-4911-89db-aa7ad6eba9af",
+    "user_id": "d340203c-ec71-415b-ae2b-0ece758e6c2d",
+    "side": "baseline",
+    "role": "assistant",
+    "content": "您好！有什么我可以帮助你的吗？",
+    "created_at": "2026-05-23T03:52:26.897Z"
+  },
+  {
+    "id": "8234359a-f1d4-4d70-a0f3-539d158d4b08",
+    "thread_id": "cde469c7-f81f-4911-89db-aa7ad6eba9af",
+    "user_id": "d340203c-ec71-415b-ae2b-0ece758e6c2d",
+    "side": "enhanced",
+    "role": "assistant",
+    "content": "你好呀！有什么可以帮你的吗？\n\n如果你想听个笑话，随时告诉我哦！我有很多有趣的笑话等着分享呢！😄",
+    "created_at": "2026-05-23T03:52:26.897Z"
+  },
+  {
+    "id": "f8c0c36e-2a2f-4edc-af91-f5da8d1f42c2",
+    "thread_id": "cde469c7-f81f-4911-89db-aa7ad6eba9af",
+    "user_id": "d340203c-ec71-415b-ae2b-0ece758e6c2d",
+    "side": "shared",
+    "role": "user",
+    "content": "a",
+    "created_at": "2026-05-23T03:53:24.078Z"
+  },
+  {
+    "id": "84d1bd4c-9fe9-4807-95b5-eac71c13c392",
+    "thread_id": "cde469c7-f81f-4911-89db-aa7ad6eba9af",
+    "user_id": "d340203c-ec71-415b-ae2b-0ece758e6c2d",
+    "side": "baseline",
+    "role": "assistant",
+    "content": "您好！有什么我可以帮助你的吗？",
+    "created_at": "2026-05-23T03:53:29.895Z"
+  },
+  {
+    "id": "b31632ed-b99a-45ac-8f91-dcf0d7e44997",
+    "thread_id": "cde469c7-f81f-4911-89db-aa7ad6eba9af",
+    "user_id": "d340203c-ec71-415b-ae2b-0ece758e6c2d",
+    "side": "enhanced",
+    "role": "assistant",
+    "content": "你好呀！有什么可以帮你的吗？\n\n如果你想听个笑话，随时告诉我哦！我有很多有趣的笑话等着分享呢！😄",
+    "created_at": "2026-05-23T03:53:29.895Z"
+  },
+  {
+    "id": "ee5fa7dc-fc04-4f69-a58f-0861333bea3c",
+    "thread_id": "cde469c7-f81f-4911-89db-aa7ad6eba9af",
+    "user_id": "d340203c-ec71-415b-ae2b-0ece758e6c2d",
+    "side": "shared",
+    "role": "user",
+    "content": "啊s",
+    "created_at": "2026-05-23T03:54:10.184Z"
+  },
+  {
+    "id": "a1200c92-c712-4352-bbbd-52e941c4af99",
+    "thread_id": "cde469c7-f81f-4911-89db-aa7ad6eba9af",
+    "user_id": "d340203c-ec71-415b-ae2b-0ece758e6c2d",
+    "side": "shared",
+    "role": "user",
+    "content": "a",
+    "created_at": "2026-05-23T12:58:55.184Z"
+  },
+  {
+    "id": "3ffb7da9-e797-4bcc-a6d3-7de564046c5b",
+    "thread_id": "cde469c7-f81f-4911-89db-aa7ad6eba9af",
+    "user_id": "d340203c-ec71-415b-ae2b-0ece758e6c2d",
+    "side": "baseline",
+    "role": "assistant",
+    "content": "您好！有什么我可以帮助你的吗？",
+    "created_at": "2026-05-23T13:51:02.694Z"
+  },
+  {
+    "id": "125f3345-76af-46c7-9430-e1ef4ee6af37",
+    "thread_id": "cde469c7-f81f-4911-89db-aa7ad6eba9af",
+    "user_id": "d340203c-ec71-415b-ae2b-0ece758e6c2d",
+    "side": "enhanced",
+    "role": "assistant",
+    "content": "Generation failed: This operation was aborted",
+    "created_at": "2026-05-23T13:51:02.694Z"
+  },
+  {
+    "id": "a9ea7988-a64c-4511-93ad-b20053eaf8cf",
+    "thread_id": "cde469c7-f81f-4911-89db-aa7ad6eba9af",
+    "user_id": "d340203c-ec71-415b-ae2b-0ece758e6c2d",
+    "side": "shared",
+    "role": "user",
+    "content": "a",
+    "created_at": "2026-05-23T13:51:10.307Z"
+  },
+  {
+    "id": "089b607a-9c52-4ae1-8190-f7cc1ce5f43a",
+    "thread_id": "cde469c7-f81f-4911-89db-aa7ad6eba9af",
+    "user_id": "d340203c-ec71-415b-ae2b-0ece758e6c2d",
+    "side": "shared",
+    "role": "user",
+    "content": "hi",
+    "created_at": "2026-05-24T08:44:02.896Z"
+  },
+  {
+    "id": "97e4caaa-3dec-41a8-b32e-bf575e77d5d7",
+    "thread_id": "cde469c7-f81f-4911-89db-aa7ad6eba9af",
+    "user_id": "d340203c-ec71-415b-ae2b-0ece758e6c2d",
+    "side": "baseline",
+    "role": "assistant",
+    "content": "你好！有什么我可以帮助你的吗？",
+    "created_at": "2026-05-24T08:44:04.874Z"
+  },
+  {
+    "id": "a0629da8-edab-40d9-90ad-30c2467555fc",
+    "thread_id": "cde469c7-f81f-4911-89db-aa7ad6eba9af",
+    "user_id": "d340203c-ec71-415b-ae2b-0ece758e6c2d",
+    "side": "enhanced",
+    "role": "assistant",
+    "content": "你好呀！又见面了！\n\n想听个笑话，让心情更轻松愉快吗？我随时准备着哦！😄",
+    "created_at": "2026-05-24T08:44:04.874Z"
+  },
+  {
+    "id": "7ca82810-f25d-45ac-a249-8ba1b399835a",
+    "thread_id": "cde469c7-f81f-4911-89db-aa7ad6eba9af",
+    "user_id": "d340203c-ec71-415b-ae2b-0ece758e6c2d",
+    "side": "shared",
+    "role": "user",
+    "content": "hi",
+    "created_at": "2026-05-27T06:49:21.057Z"
+  },
+  {
+    "id": "56cd339f-f6b1-4529-ad0c-e77cca3396a4",
+    "thread_id": "cde469c7-f81f-4911-89db-aa7ad6eba9af",
+    "user_id": "d340203c-ec71-415b-ae2b-0ece758e6c2d",
+    "side": "baseline",
+    "role": "assistant",
+    "content": "你好！有什么我可以帮助你的吗？",
+    "created_at": "2026-05-27T06:49:24.485Z"
+  },
+  {
+    "id": "f1b248a7-75ef-4e08-8519-91ab80b2f8f6",
+    "thread_id": "cde469c7-f81f-4911-89db-aa7ad6eba9af",
+    "user_id": "d340203c-ec71-415b-ae2b-0ece758e6c2d",
+    "side": "enhanced",
+    "role": "assistant",
+    "content": "你好呀！又见面了！\n\n想听个笑话，让心情更轻松愉快吗？我随时准备着哦！😄",
+    "created_at": "2026-05-27T06:49:24.485Z"
+  }
+]

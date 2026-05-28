@@ -1,5 +1,6 @@
 import os
 from dataclasses import dataclass
+from typing import Dict
 
 from llm_common.llm_infer.load_env import ENV_FILE, load_env_file
 
@@ -76,6 +77,32 @@ DEFAULT_4B_BASELINE_API = ApiConfig.from_env(
 )
 
 
+DEFAULT_32B_INNOSPARK_API = ApiConfig.from_env(
+    defaults=ApiConfig(
+        # https://qz.sii.edu.cn/jobs/modelDeplayDetail/sv-8c4d814f-5b59-4db8-9e7f-0a652019c6c4?spaceId=ws-33f55cbb-1e6b-4b37-b69d-3b52568e0a61
+        base_url="https://hocph9c5dmdjcpmhjqg58keda89joeoc.openapi-qb.sii.edu.cn/v1",
+        api_key=SII_API_KEY,
+        model="Qwen3-32B-ceval",
+    ),
+    url_env="DEFAULT_1T_INNOSPARK_BASE_URL",
+    key_env="DEFAULT_1T_INNOSPARK_API_KEY",
+    model_env="DEFAULT_1T_INNOSPARK_MODEL",
+)
+
+
+DEFAULT_32B_OFFICIAL_API = ApiConfig.from_env(
+    defaults=ApiConfig(
+        # https://qz.sii.edu.cn/jobs/modelDeplayDetail/sv-1f4ffff2-be2a-43d5-bffd-e2dabcf6190e?spaceId=ws-9dcc0e1f-80a4-4af2-bc2f-0e352e7b17e6
+        base_url="https://95c5555amqakcbpdm55pqapkmo5e9j8q.openapi-qb.sii.edu.cn/v1",
+        api_key=SII_API_KEY,
+        model="Qwen3-32B",
+    ),
+    url_env="DEFAULT_1T_INNOSPARK_BASE_URL",
+    key_env="DEFAULT_1T_INNOSPARK_API_KEY",
+    model_env="DEFAULT_1T_INNOSPARK_MODEL",
+)
+
+
 DEFAULT_1T_INNOSPARK_API = ApiConfig.from_env(
     defaults=ApiConfig(
         # https://qz.sii.edu.cn/jobs/modelDeplayDetail/sv-9833105f-d358-4cac-bc0e-eb9c95af3469?spaceId=ws-33f55cbb-1e6b-4b37-b69d-3b52568e0a61
@@ -131,6 +158,26 @@ GLM51FP8_API = ApiConfig.from_env(
     key_env="GLM51FP8_API_KEY",
     model_env="GLM51FP8_MODEL",
 )
+
+# Reverse mapping from a model name to its ApiConfig, so callers can look up the
+# full config (base_url / api_key) given just a model string. Built by scanning
+# this module's ApiConfig instances; on a model-name collision the first-defined
+# config wins (globals() preserves definition order).
+MODEL_TO_APICONFIG: Dict[str, ApiConfig] = {}
+for _name, _value in list(globals().items()):
+    if isinstance(_value, ApiConfig):
+        MODEL_TO_APICONFIG.setdefault(_value.model, _value)
+
+
+def apiconfig_for_model(model: str) -> ApiConfig:
+    """Return the ApiConfig registered for `model`, or raise KeyError."""
+    try:
+        return MODEL_TO_APICONFIG[model]
+    except KeyError:
+        raise KeyError(
+            f"no ApiConfig registered for model {model!r}; "
+            f"known models: {sorted(MODEL_TO_APICONFIG)}"
+        )
 
 
 def main():
