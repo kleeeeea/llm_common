@@ -57,9 +57,9 @@ id,prompt
 ```
 
 ```python
-from llm_common.llm_infer.batch_call import batch_call
+from llm_common.llm_infer.batch_call import cached_batch_call_file
 
-batch_call("path/to/prompts.csv", max_workers=4)
+cached_batch_call_file("path/to/prompts.csv", max_workers=4)
 ```
 
 Output is written to `<parent>_batch_infer_<model>/`:

@@ -1,10 +1,10 @@
-id,prompt,llm_response
-0,tell me a joke,"Why did the scarecrow win an award?
+id,prompt,llm_response,reasoning,prompt_tokens,completion_tokens,total_tokens,latency_ms,model_settings
+0,tell me a joke,"Why don't scientists trust atoms?
 
-Because he was outstanding in his field!"
+Because they make up everything!",,29,39,68,1642.6636669784784,"{'thinking': {'type': 'disabled'}, 'temperature': 0.1, 'stream': True, 'system_input': 'Reasoning effort should be low. Maxmium tokens for reasoning or thinking can not be more than 100 tokens.', 'max_tokens': 12000, 'disable_maxtoken_hint': 1, 'api': {'base_url': 'https://api.innospark.cn/v1', 'api_key': 'sk-yJdHSUrrZNYkBS5f5dHOPgoxRw5Q8qRJPFTbKh6jOqnAUZNF', 'model': 'gemini-2.5-flash'}, 'api_key': 'sk-yJdHSUrrZNYkBS5f5dHOPgoxRw5Q8qRJPFTbKh6jOqnAUZNF', 'base_url': 'https://api.innospark.cn/v1', 'model': 'gemini-2.5-flash', 'timeout': 60.0}"
 1,tell me a joke about politics,"Why did the politician bring a ladder to the rally?
 
-Because he wanted to reach new heights... of promises!"
-2,tell me a joke about internet,"Why did the internet break up with the Wi-Fi?
+Because he wanted to reach new heights of promises!",,31,68,99,1522.7570000570267,"{'thinking': {'type': 'disabled'}, 'temperature': 0.1, 'stream': True, 'system_input': 'Reasoning effort should be low. Maxmium tokens for reasoning or thinking can not be more than 100 tokens.', 'max_tokens': 12000, 'disable_maxtoken_hint': 1, 'api': {'base_url': 'https://api.innospark.cn/v1', 'api_key': 'sk-yJdHSUrrZNYkBS5f5dHOPgoxRw5Q8qRJPFTbKh6jOqnAUZNF', 'model': 'gemini-2.5-flash'}, 'api_key': 'sk-yJdHSUrrZNYkBS5f5dHOPgoxRw5Q8qRJPFTbKh6jOqnAUZNF', 'base_url': 'https://api.innospark.cn/v1', 'model': 'gemini-2.5-flash', 'timeout': 60.0}"
+2,tell me a joke about internet,"Why did the internet go to the doctor?
 
-Because they had too many connection issues!"
+Because it had a lot of *bytes* and kept *buffering*!",,31,95,126,1775.8292499929667,"{'thinking': {'type': 'disabled'}, 'temperature': 0.1, 'stream': True, 'system_input': 'Reasoning effort should be low. Maxmium tokens for reasoning or thinking can not be more than 100 tokens.', 'max_tokens': 12000, 'disable_maxtoken_hint': 1, 'api': {'base_url': 'https://api.innospark.cn/v1', 'api_key': 'sk-yJdHSUrrZNYkBS5f5dHOPgoxRw5Q8qRJPFTbKh6jOqnAUZNF', 'model': 'gemini-2.5-flash'}, 'api_key': 'sk-yJdHSUrrZNYkBS5f5dHOPgoxRw5Q8qRJPFTbKh6jOqnAUZNF', 'base_url': 'https://api.innospark.cn/v1', 'model': 'gemini-2.5-flash', 'timeout': 60.0}"

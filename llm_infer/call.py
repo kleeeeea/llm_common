@@ -1,74 +1,22 @@
-#!/usr/bin/env python3
-import base64
 import json
 import os
 import sys
+import time
 import urllib.error
 import urllib.request
-from dataclasses import dataclass, field, replace
-from pathlib import Path
-from typing import Any, Dict, Optional, Sequence
+from dataclasses import replace
+from typing import Any
+from typing import Dict
+from typing import Optional
+from typing import Sequence
 
 from llm_common.llm_infer.api_info.dataclass_ import ApiConfig
-from llm_common.llm_infer.load_env import ENV_FILE, load_env_file, read_env_file, require_env
-
-api_innospark_cn_v_ = "https://api.innospark.cn/v1"
-
-
-@dataclass(frozen=True)
-class ModelSettings:
-    thinking: Dict[str, Any] = field(default_factory=lambda: {"type": "disabled"})
-    temperature: float = 0.1
-    stream: bool = True
-    system_input: Optional[str] = None
-    max_tokens: Optional[int] = None
-    disable_maxtoken_hint: bool = False
-    # Pass an ApiConfig in `api` to populate api_key / base_url / model in one
-    # shot. Explicit values for those fields still win — they're used as
-    # per-field overrides on top of the ApiConfig.
-    api: Optional[ApiConfig] = None
-    api_key: Optional[str] = None
-    base_url: Optional[str] = None
-    model: Optional[str] = None
-    timeout: Optional[float] = None
-
-    def __post_init__(self):
-        if self.api is not None:
-            if self.api_key is None:
-                object.__setattr__(self, 'api_key', self.api.api_key)
-            if self.base_url is None:
-                object.__setattr__(self, 'base_url', self.api.base_url)
-            if self.model is None:
-                object.__setattr__(self, 'model', self.api.model)
-
-        local_env = read_env_file(ENV_FILE)
-        local_env.update(os.environ)
-        api_key = (self.api_key or local_env.get("LLM_API_KEY", "")).strip()
-        base_url = (self.base_url or local_env.get("LLM_BASE_URL", api_innospark_cn_v_)).strip().rstrip("/")
-        model = (self.model or local_env.get("LLM_MODEL", "gemini-2.5-flash")).strip() or "gemini-2.5-flash"
-        timeout = self.timeout if self.timeout is not None else float(local_env.get("TIMEOUT_SECONDS", "60"))
-        require_positive_number("timeout", timeout)
-        is_local = any(h in base_url for h in ("localhost", "127.0.0.1", "0.0.0.0"))
-        if not api_key and not is_local:
-            print(f"ERROR: LLM_API_KEY is empty. Set it in {ENV_FILE} or export LLM_API_KEY.", file=sys.stderr)
-            sys.exit(2)
-        max_tokens = self.max_tokens if self.max_tokens is not None else int(local_env.get("MAX_TOKENS", "12000"))
-        require_positive_number("max_tokens", max_tokens)
-        system_input = (self.system_input or local_env.get("SYSTEM_INPUT", "你是测试助手。回答必须按照字数要求。")).strip()
-        # Idempotent: `replace()` (used in call_openai) re-runs __post_init__, so
-        # only append the hint if it isn't already present.
-        hint_marker = "Total token budget including reasoning is:"
-        if not self.disable_maxtoken_hint and hint_marker not in system_input:
-            system_input += f"\n{hint_marker} {max_tokens}. Reasoning budget can not be more than {int(max_tokens * 0.8)} tokens"
-
-        # Frozen dataclass — write resolved values back in place (no `replace`,
-        # which would recurse through __post_init__).
-        object.__setattr__(self, "api_key", api_key)
-        object.__setattr__(self, "base_url", base_url)
-        object.__setattr__(self, "model", model)
-        object.__setattr__(self, "timeout", timeout)
-        object.__setattr__(self, "max_tokens", max_tokens)
-        object.__setattr__(self, "system_input", system_input)
+from llm_common.llm_infer.instances import LLMInferInput
+from llm_common.llm_infer.instances import LLMInferOutput
+from llm_common.llm_infer.instances import ModelSettings
+from llm_common.llm_infer.load_env import ENV_FILE
+from llm_common.llm_infer.load_env import load_env_file
+from llm_common.llm_infer.load_env import require_env
 
 
 def stream_sse_lines(response):
@@ -89,9 +37,6 @@ def stream_sse_lines(response):
             yield line[6:].strip()
 
 
-def require_positive_number(name: str, value: float) -> None:
-    if value <= 0:
-        raise ValueError(f"{name} must be positive, got {value!r}")
 
 
 def build_chat_completions_url(base_url: str) -> str:
@@ -162,23 +107,12 @@ def build_user_content(prompt: str, image_data_urls: Sequence[str]) -> Any:
     return content
 
 
-def image_path_to_data_url(image_path: Any) -> str:
-    path = Path(image_path)
-    suffix = path.suffix.lower()
-    mime_type = {
-            ".jpg" : "image/jpeg",
-            ".jpeg": "image/jpeg",
-            ".png" : "image/png",
-            ".gif" : "image/gif",
-            ".webp": "image/webp",
-    }.get(suffix, "application/octet-stream")
-    image_base64 = base64.b64encode(path.read_bytes()).decode("ascii")
-    return f"data:{mime_type};base64,{image_base64}"
 
 
 def main() -> int:
     load_env_file(ENV_FILE)
 
+    from llm_common.llm_infer.instances import api_innospark_cn_v_
     base_url = require_env("LLM_BASE_URL", api_innospark_cn_v_).rstrip("/")
     api_key = require_env("LLM_API_KEY", '')
     model = os.environ.get("LLM_MODEL", "gemini-2.5-flash").strip() or "gemini-2.5-flash"
@@ -193,49 +127,8 @@ def main() -> int:
     print(text)
     return 0
 
-class LlmResponse(str):
-    """A ``str`` subclass that also carries token ``usage`` and ``reasoning``.
-
-    ``call_openai`` returns this so existing callers that treat the result as a
-    plain string keep working unchanged, while callers that want token
-    accounting can read ``.usage`` — an OpenAI-style dict
-    ``{"prompt_tokens", "completion_tokens", "total_tokens", ...}`` or ``None``
-    when the server did not report it.
-    """
-
-    usage: Optional[Dict[str, Any]]
-    reasoning: Optional[str]
-
-    def __new__(cls, text: str, usage: Optional[Dict[str, Any]] = None,
-                reasoning: Optional[str] = None) -> "LlmResponse":
-        obj = super().__new__(cls, text)
-        obj.usage = usage
-        obj.reasoning = reasoning
-        return obj
-
-
-@dataclass(frozen=True)
-class CallOpenaiInput(object):
-    prompt: str
-    image_paths: Optional[Sequence[Any]] = None
-    image_data_urls: Optional[Sequence[str]] = None
-    model_settings: Optional[ModelSettings] = None
-
-    def __post_init__(self) -> None:
-
-        ms = (self.model_settings if self.model_settings is not None else ModelSettings())
-
-        image_data_urls = [u.strip() for u in (self.image_data_urls or ()) if u.strip()]
-        image_data_urls.extend(image_path_to_data_url(p) for p in (self.image_paths or ()))
-        object.__setattr__(self, "image_data_urls", tuple(image_data_urls))
-        object.__setattr__(self, "model_settings", ms)
-        if not self.prompt:
-            raise ValueError("prompt is empty")
-        if not ms.system_input:
-            raise ValueError("system_input is empty")
-
 def call_openai(
-        input_: Optional[CallOpenaiInput]=None,
+        input_: Optional[LLMInferInput]=None,
         api_config: Optional[ApiConfig]=None,
         api_key: str=None, base_url: str=None, max_tokens: int=None,
         model: str=None, prompt: str=None,
@@ -243,7 +136,7 @@ def call_openai(
         image_data_urls: Optional[Sequence[str]]=None, timeout: float=None,
         do_print_one_response_per_line=None, disable_maxtoken_hint=None,
         model_settings: Optional[ModelSettings]=None,
-) -> str:
+) -> LLMInferOutput:
     if input_ is None:
         if api_config is not None:
             api_key = api_key or api_config.api_key
@@ -259,7 +152,7 @@ def call_openai(
                                  system_input=model_settings.system_input or system_input,
                                  max_tokens=model_settings.max_tokens or max_tokens,
                                  disable_maxtoken_hint=model_settings.disable_maxtoken_hint or bool(disable_maxtoken_hint))
-        input_ = CallOpenaiInput(
+        input_ = LLMInferInput(
                 prompt=prompt,
                 image_paths=image_paths,
                 image_data_urls=image_data_urls,
@@ -302,6 +195,7 @@ def call_openai(
     reasoning_chunks: list[str] = []
     all_payloads: list[str] = []
     usage: Optional[Dict[str, Any]] = None
+    _t0 = time.perf_counter()
     #     Out[1]:
     # ['{"id":"8fe1630f301c48a3bf7c4600cd5b17bc","object":"chat.completion.chunk","created":1779609667,"model":"Kimi-K2.6","choices":[{"index":0,"delta":{"role":"assistant","content":"","reasoning_content":null,"tool_calls":null},"logprobs":null,"finish_reason":null,"matched_stop":null}],"usage":null}',
     #  '{"id":"8fe1630f301c48a3bf7c4600cd5b17bc","object":"chat.completion.chunk","created":1779609667,"model":"Kimi-K2.6","choices":[{"index":0,"delta":{"role":null,"content":null,"reasoning_content":"The","tool_calls":null},"logprobs":null,"finish_reason":null,"matched_stop":null}],"usage":null}',
@@ -364,10 +258,19 @@ def call_openai(
     if not text:
         print("ERROR: stream completed but produced no text", file=sys.stderr)
         raise Exception('llm error')
-    # Return a str subclass: behaves like the text for existing callers, but also
-    # exposes `.usage` (token counts) and `.reasoning` for those who want them.
     reasoning = "".join(reasoning_chunks).strip() or None
-    return LlmResponse(text, usage=usage, reasoning=reasoning)
+    return LLMInferOutput(
+        prompt=input_.prompt,
+        image_data_urls=input_.image_data_urls,
+        model_settings=input_.model_settings,
+        extra=input_.extra,
+        llm_response=text,
+        reasoning=reasoning,
+        prompt_tokens=(usage or {}).get("prompt_tokens"),
+        completion_tokens=(usage or {}).get("completion_tokens"),
+        total_tokens=(usage or {}).get("total_tokens"),
+        latency_ms=(time.perf_counter() - _t0) * 1000.0,
+    )
 
 
 if __name__ == "__main__":
