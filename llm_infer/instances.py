@@ -137,29 +137,21 @@ class ModelSettings:
     system_input: Optional[str] = None
     max_tokens: Optional[int] = None
     disable_maxtoken_hint: bool = False
-    # Pass an ApiConfig in `api` to populate api_key / base_url / model in one
-    # shot. Explicit values for those fields still win — they're used as
-    # per-field overrides on top of the ApiConfig.
+    # The single source of api_key / base_url / model is this ApiConfig (falling
+    # back to env vars when absent). The resolved values are exposed as the
+    # ``api_key`` / ``base_url`` / ``model`` *attributes* (set in __post_init__),
+    # but they are NOT dataclass fields — so they don't duplicate the ApiConfig
+    # in ``asdict`` / serialised output.
     api: Optional[ApiConfig] = None
-    api_key: Optional[str] = None
-    base_url: Optional[str] = None
-    model: Optional[str] = None
     timeout: Optional[float] = None
 
     def __post_init__(self):
-        if self.api is not None:
-            if self.api_key is None:
-                object.__setattr__(self, 'api_key', self.api.api_key)
-            if self.base_url is None:
-                object.__setattr__(self, 'base_url', self.api.base_url)
-            if self.model is None:
-                object.__setattr__(self, 'model', self.api.model)
-
+        api = self.api
         local_env = read_env_file(ENV_FILE)
         local_env.update(os.environ)
-        api_key = (self.api_key or local_env.get("LLM_API_KEY", "")).strip()
-        base_url = (self.base_url or local_env.get("LLM_BASE_URL", api_innospark_cn_v_)).strip().rstrip("/")
-        model = (self.model or local_env.get("LLM_MODEL", "gemini-2.5-flash")).strip() or "gemini-2.5-flash"
+        api_key = ((api.api_key if api else None) or local_env.get("LLM_API_KEY", "")).strip()
+        base_url = ((api.base_url if api else None) or local_env.get("LLM_BASE_URL", api_innospark_cn_v_)).strip().rstrip("/")
+        model = ((api.model if api else None) or local_env.get("LLM_MODEL", "gemini-2.5-flash")).strip() or "gemini-2.5-flash"
         timeout = self.timeout if self.timeout is not None else float(local_env.get("TIMEOUT_SECONDS", "60"))
         require_positive_number("timeout", timeout)
         is_local = any(h in base_url for h in ("localhost", "127.0.0.1", "0.0.0.0"))
@@ -229,6 +221,31 @@ class LLMInferInput(object):
         # Auto-populate id from extra when not provided explicitly.
         if not self.id and self.extra:
             object.__setattr__(self, "id", str(self.extra.get("id", "")))
+
+    @property
+    def model(self) -> str:
+        """Model name for this instance.
+
+        For a *loaded* record (CSV/JSONL) the authoritative settings are the
+        ones embedded in ``extra['model_settings']`` — a dict, or a stringified
+        dict when round-tripped through a CSV cell — so check that first. When
+        absent (a freshly-built instance), fall back to the live
+        ``model_settings.model``. The order matters: loading passes
+        ``model_settings=None``, so ``__post_init__`` fills in a *default*
+        ModelSettings whose ``.model`` would otherwise mask the real value.
+        """
+        ms = (self.extra or {}).get("model_settings")
+        if isinstance(ms, str):
+            import ast
+            try:
+                ms = ast.literal_eval(ms)
+            except (ValueError, SyntaxError):
+                ms = None
+        if isinstance(ms, dict) and ms.get("model"):
+            return str(ms["model"])
+        if self.model_settings is not None and self.model_settings.model:
+            return self.model_settings.model
+        return ""
 
     @classmethod
     def from_dict(

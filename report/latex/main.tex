@@ -1,5 +1,8 @@
 \documentclass{article}
+\usepackage[utf8]{inputenc}
 \usepackage{booktabs}
+\usepackage{longtable}
+\usepackage{array}
 \usepackage{hyperref}
 \hypersetup{colorlinks=true, linkcolor=blue, urlcolor=blue}
 \usepackage{microtype}
@@ -15,11 +18,8 @@
 
 \section{Results}
 
-Table~\ref{tab:praxis_reading} shows MCQ accuracy on the Praxis Reading sample set
-(\texttt{prompts\_sample\_8}).
-Acc\textsubscript{all} = correct / total questions;
-Acc\textsubscript{ans} = correct / answered questions (unanswered rows excluded).
-
 \input{tables/tab:praxis_reading}
+\input{tables/tab:model_settings}
+\input{tables/tab:praxis_errors}
 
 \end{document}

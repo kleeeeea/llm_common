@@ -138,16 +138,25 @@ def call_openai(
         model_settings: Optional[ModelSettings]=None,
 ) -> LLMInferOutput:
     if input_ is None:
-        if api_config is not None:
-            api_key = api_key or api_config.api_key
-            base_url = base_url or api_config.base_url
-            model = model or api_config.model
         if model_settings is None:
             model_settings = ModelSettings()
+        # api_key / base_url / model are no longer standalone ModelSettings
+        # fields — fold any explicit overrides (direct kwargs or api_config)
+        # into the ModelSettings' ApiConfig instead.
+        cur = model_settings.api
+        ovr_key   = api_key  or (api_config.api_key  if api_config else None)
+        ovr_url   = base_url or (api_config.base_url if api_config else None)
+        ovr_model = model    or (api_config.model    if api_config else None)
+        if cur is not None or ovr_key or ovr_url or ovr_model:
+            merged_api = ApiConfig(
+                base_url=ovr_url   or (cur.base_url if cur else "") or "",
+                api_key =ovr_key   or (cur.api_key  if cur else "") or "",
+                model   =ovr_model or (cur.model    if cur else "") or "",
+            )
+        else:
+            merged_api = None
         model_settings = replace(model_settings,
-                                 api_key=model_settings.api_key or api_key,
-                                 base_url=model_settings.base_url or base_url,
-                                 model=model_settings.model or model,
+                                 api=merged_api,
                                  timeout=model_settings.timeout or timeout,
                                  system_input=model_settings.system_input or system_input,
                                  max_tokens=model_settings.max_tokens or max_tokens,

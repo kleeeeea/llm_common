@@ -55,6 +55,33 @@ class LLMInferPerRowReport(LLMInferOutput):
         d["correct"] = self.correct
         return d
 
+    @classmethod
+    def from_dict(cls, row, model_settings=None, image_paths=None, image_data_urls=None):
+        """Round-trip a scored CSV/JSONL record, restoring gold/pred/correct.
+
+        Layers the scoring columns on top of ``LLMInferOutput.from_dict`` so the
+        inherited ``from_csv`` / ``from_jsonl`` produce fully-typed reports.
+        """
+        base = LLMInferOutput.from_dict(
+            row, model_settings=model_settings,
+            image_paths=image_paths, image_data_urls=image_data_urls,
+        )
+        e = base.extra  # already NaN-sanitised by LLMInferOutput.from_dict
+        return cls(
+            id                = base.id,
+            prompt            = base.prompt,
+            image_data_urls   = base.image_data_urls,
+            extra             = e,
+            llm_response      = base.llm_response,
+            reasoning         = base.reasoning,
+            prompt_tokens     = base.prompt_tokens,
+            completion_tokens = base.completion_tokens,
+            total_tokens      = base.total_tokens,
+            latency_ms        = base.latency_ms,
+            gold              = e.get("gold"),
+            pred              = e.get("pred"),
+            correct           = bool(e.get("correct")),
+        )
 
     @classmethod
     def get_output_path_hint(cls, input_path: "str | Path") -> Path:
@@ -94,6 +121,8 @@ def pred_letter(llm_response: str) -> str | None:
 SAMPLE_LLMOUTPUT = '/Users/l/klee_code/git_repos/llm_evals/parse_evaluation/praxis_reading_1/outputs/prompts_sample_8_batch_infer_gemini-2.5-flash.csv'
 
 
+
+
 def get_scored_file(
         llm_response_file: str
 ) -> None:
@@ -112,6 +141,9 @@ def get_scored_file(
     n_answered = sum(1 for r in reports if r.pred is not None)
     n_correct  = sum(1 for r in reports if r.correct)
     scored_path = LLMInferPerRowReport.get_output_path_hint(llm_response_file)
+
+    
+
     # Inherited from LLMInferOutput: serialises each report via to_dict()
     # (which appends gold/pred/correct). No row is None, so fallback is unused.
     LLMInferPerRowReport.to_csv(reports, [r.extra for r in reports], scored_path)

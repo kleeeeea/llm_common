@@ -8,13 +8,12 @@ Responsibilities:
 Everything else (path helpers, per-row loading, display config, demo) lives in
 _bak.py to keep this module focused on aggregation.
 """
+from typing import List
 
-
-from llm_common.report.pipeline_after_llmcall1 import SAMPLE_LLMOUTPUT
-from llm_common.report.pipeline_after_llmcall1 import _get_scored_file_path
-from llm_common.report.pipeline_after_llmcall1 import get_scored_file
+from llm_common.report.get_per_row_result import SAMPLE_LLMOUTPUT
 
 import os
+import re
 from collections import defaultdict
 from pathlib import Path
 from typing import Any
@@ -57,49 +56,12 @@ def model_from_path(path: str | Path) -> str:
     return parent
 
 
-def available_models() -> list[str]:
-    """Return model names for all scored CSVs found under RESPONSES_ROOT."""
-    if not RESPONSES_ROOT.exists():
-        return []
-    return [
-        model_from_path(p)
-        for p in sorted(RESPONSES_ROOT.glob(f"{MODEL_DIR_PREFIX}*/{SCORED_CSV_NAME}"))
-    ]
-
-
 # ---------------------------------------------------------------------------
 # Aggregation
 # ---------------------------------------------------------------------------
 
-def _model_stats(df: pd.DataFrame) -> dict[str, Any]:
-    """Compute accuracy stats from a scored DataFrame (requires pred/correct cols)."""
-    total      = int(len(df))
-    successful = int(df["pred"].notna().sum())
-    correct    = int(df["correct"].fillna(False).sum())
-    return {
-        "total"                  : total,
-        "successful"             : successful,
-        "failed"                 : total - successful,
-        "correct"                : correct,
-        "accuracy"               : correct / successful if successful else 0.0,
-        "score"                  : correct / successful if successful else 0.0,
-        "avg_latency_ms"         : 0.0,
-        "total_prompt_tokens"    : 0,
-        "total_completion_tokens": 0,
-    }
 
-
-def load_report() -> dict[str, Any]:
-    """Build an aggregate report dict for all available models."""
-    models: dict[str, Any] = {}
-    for model in available_models():
-        scored_path = RESPONSES_ROOT / f"{MODEL_DIR_PREFIX}{model}" / SCORED_CSV_NAME
-        df = pd.read_csv(scored_path)
-        models[model] = _model_stats(df)
-    return {"generated_at": "praxis_reading_1 (computed)", "models": models}
-
-
-def generate_latex_table(
+def generate_overall_latex_table(
         rows: list[dict[str, Any]],
         caption: str = "",
         label: str = "tab:praxis_reading",
@@ -205,71 +167,287 @@ echo "==> Done: main.pdf"
 
     return table_tex
 
-# --- example usage -----------------------------------------------------------
+_LATEX_UNICODE = {
+    "‘": "'", "’": "'", "“": '"', "”": '"',
+    "–": "--", "—": "---", "…": "...", " ": " ",
+}
+_LATEX_SPECIAL = {
+    "\\": r"\textbackslash{}",
+    "&": r"\&", "%": r"\%", "$": r"\$", "#": r"\#", "_": r"\_",
+    "{": r"\{", "}": r"\}",
+    "~": r"\textasciitilde{}", "^": r"\textasciicircum{}",
+}
 
-def main() -> None:
-    scored_path = Path(_get_scored_file_path(SAMPLE_LLMOUTPUT))
-    print(f"Scored file : {scored_path}")
 
-    if not scored_path.exists():
-        raw_path = Path(SAMPLE_LLMOUTPUT)
-        if not raw_path.exists():
-            print("Raw LLM output not found — run prompts_sample_8.py first.")
+def _latex_cell(
+        text: Any,
+        limit: int | None = None,
+        preserve_newlines: bool = False,
+        strip_line_numbers: bool = False,
+) -> str:
+    """Make arbitrary text safe for a LaTeX cell: normalise unicode, escape
+    special characters, and collapse whitespace. Truncates only when *limit*
+    is given (``None`` = keep the full text).
+
+    With ``preserve_newlines=True`` the source line breaks are kept as LaTeX
+    ``\\newline`` breaks (intra-line whitespace is still collapsed) — used so the
+    a./b./c. answer choices stay on separate lines in a ``p{}`` column.
+
+    With ``strip_line_numbers=True`` a leading integer + space is removed from
+    each line (drops the ``5``, ``10``, ``15`` … margin line-numbers embedded in
+    the source passages). Only applies in ``preserve_newlines`` mode.
+    """
+    s = str(text) if text is not None else ""
+    for uni, ascii_ in _LATEX_UNICODE.items():
+        s = s.replace(uni, ascii_)
+    s = s.encode("ascii", "ignore").decode("ascii")  # drop any remaining non-ascii
+
+    def _esc(t: str) -> str:
+        return "".join(_LATEX_SPECIAL.get(ch, ch) for ch in t)
+
+    if preserve_newlines:
+        cleaned = []
+        for ln in s.splitlines():
+            ln = " ".join(ln.split())  # collapse intra-line whitespace
+            if strip_line_numbers:
+                ln = re.sub(r"^\d+\s+", "", ln)  # drop a leading margin line-number
+            if ln:
+                cleaned.append(_esc(ln))
+        out = r" \newline ".join(cleaned)
+    else:
+        out = _esc(" ".join(s.split()))
+
+    if limit is not None and len(out) > limit:
+        out = out[:limit].rstrip() + "..."
+    return out
+
+
+def generate_error_table(
+        reports: list,
+        caption: str = "",
+        label: str = "tab:praxis_errors",
+) -> str:
+    """Collect the *wrong* answered rows into a LaTeX ``longtable``.
+
+    Each error is rendered as a block of key/value rows (one field per row) in a
+    two-column layout, so long question / reasoning text wraps across the full
+    page width instead of being squeezed into a narrow column. Writes
+    ``latex/tables/<label>.tex`` and returns the fragment string.
+    """
+    errors = [r for r in reports if r.pred is not None and not r.correct]
+
+    if not caption:
+        caption = (
+            r"Incorrectly answered Praxis Reading questions: gold answer vs.\ "
+            r"the model's prediction and reasoning."
+        )
+
+    # Two columns: field name (left) + wide value column that wraps.
+    lines = [
+        r"\begin{longtable}{@{}l p{13cm}@{}}",
+        f"  \\caption{{{caption}}}\\label{{{label}}} \\\\",
+        r"  \toprule",
+        r"  \endfirsthead",
+        r"  \toprule",
+        r"  \endhead",
+    ]
+    if not errors:
+        lines.append(r"  \multicolumn{2}{c}{\textit{No incorrect answers.}} \\")
+    for r in errors:
+        # No truncation — show the full text; keep the a./b./c. choices and
+        # passage paragraphs on separate lines.
+        passage   = _latex_cell((r.extra or {}).get("passage", ""), preserve_newlines=True, strip_line_numbers=True) or r"\textit{--}"
+        question  = _latex_cell((r.extra or {}).get("question", ""), preserve_newlines=True)
+        gold      = _latex_cell(r.gold)
+        model_ans = _latex_cell(r.pred)
+        raw       = _latex_cell(r.llm_response)
+        if raw and raw.upper() != model_ans.upper():
+            model_ans = f"{model_ans} ({raw})"
+        reasoning = _latex_cell(r.reasoning or "", preserve_newlines=True) or r"\textit{--}"
+
+        # One field per row; the ID heads the block spanning both columns.
+        lines.append(rf"  \multicolumn{{2}}{{@{{}}l}}{{\textbf{{{_latex_cell(r.id)}}}}} \\")
+        lines.append(rf"  \textbf{{Passage}}   & {passage}    \\")
+        lines.append(rf"  \textbf{{Question}}  & {question}   \\")
+        lines.append(rf"  \textbf{{Gold}}      & {gold}       \\")
+        lines.append(rf"  \textbf{{Model}}     & {model_ans}  \\")
+        lines.append(rf"  \textbf{{Reasoning}} & {reasoning}  \\")
+        lines.append(r"  \midrule")
+    lines += [
+        r"  \bottomrule",
+        r"\end{longtable}",
+    ]
+    table_tex = "\n".join(lines)
+
+    tables_dir = Path(__file__).resolve().parent / "latex" / "tables"
+    tables_dir.mkdir(parents=True, exist_ok=True)
+    (tables_dir / f"{label}.tex").write_text(table_tex, encoding="utf-8")
+    return table_tex
+
+
+def _model_settings_dict(reports: list) -> dict:
+    """Return the run's model_settings dict from the first report that has one.
+
+    The settings are shared across rows; in a loaded CSV they live in
+    ``extra['model_settings']`` as a stringified dict.
+    """
+    import ast
+    for r in reports:
+        ms = (getattr(r, "extra", None) or {}).get("model_settings")
+        if isinstance(ms, str):
+            try:
+                ms = ast.literal_eval(ms)
+            except (ValueError, SyntaxError):
+                ms = None
+        if isinstance(ms, dict):
+            return ms
+    return {}
+
+
+def generate_model_settings_table(
+        reports: list,
+        caption: str = "",
+        label: str = "tab:model_settings",
+) -> str:
+    """Render the run's ``model_settings`` as a key/value LaTeX table.
+
+    Nested dicts (e.g. ``api``) are flattened to ``key.subkey`` rows; any
+    secret-looking field (``api_key`` / ``*_key``) is redacted. Writes
+    ``latex/tables/<label>.tex`` and returns the fragment string.
+    """
+    settings = _model_settings_dict(reports)
+
+    def _is_secret(key: str) -> bool:
+        k = key.lower()
+        return "api_key" in k or k == "key" or k.endswith("_key")
+
+    # ModelSettings.__post_init__ mirrors the ApiConfig (``api.base_url`` /
+    # ``api.api_key`` / ``api.model``) up to top-level fields, so those values
+    # appear twice. Dedupe by leaf name + value: the first occurrence wins.
+    rows: list[tuple[str, str]] = []
+    seen: set[tuple[str, str]] = set()
+
+    def _add(key: str, value: Any) -> None:
+        val = "***redacted***" if _is_secret(key) else str(value)
+        leaf = key.rsplit(".", 1)[-1]
+        if (leaf, val) in seen:
             return
-        print("Scoring raw output …")
+        seen.add((leaf, val))
+        rows.append((key, val))
+
+    for k, v in settings.items():
+        if isinstance(v, dict):
+            for sk, sv in v.items():
+                _add(f"{k}.{sk}", sv)
+        else:
+            _add(k, v)
+
+    if not caption:
+        caption = r"Model settings used to produce the responses (secrets redacted)."
+
+    lines = [
+        r"\begin{table}[htbp]",
+        r"  \centering",
+        r"  \begin{tabular}{@{}l p{10cm}@{}}",
+        r"    \toprule",
+        r"    \textbf{Setting} & \textbf{Value} \\",
+        r"    \midrule",
+    ]
+    if not rows:
+        lines.append(r"    \multicolumn{2}{c}{\textit{No model settings recorded.}} \\")
+    for k, v in rows:
+        lines.append(f"    {_latex_cell(k)} & {_latex_cell(v)} \\\\")
+    lines += [
+        r"    \bottomrule",
+        r"  \end{tabular}",
+        f"  \\caption{{{caption}}}",
+        f"  \\label{{{label}}}",
+        r"\end{table}",
+    ]
+    table_tex = "\n".join(lines)
+
+    tables_dir = Path(__file__).resolve().parent / "latex" / "tables"
+    tables_dir.mkdir(parents=True, exist_ok=True)
+    (tables_dir / f"{label}.tex").write_text(table_tex, encoding="utf-8")
+    return table_tex
+
+
+def _write_combined_document(table_labels: list[str]) -> None:
+    """Write ``latex/main.tex`` inputting every fragment in *table_labels*."""
+    latex_dir = Path(__file__).resolve().parent / "latex"
+    inputs = "\n".join(rf"\input{{tables/{lbl}}}" for lbl in table_labels)
+    main_tex = rf"""\documentclass{{article}}
+\usepackage[utf8]{{inputenc}}
+\usepackage{{booktabs}}
+\usepackage{{longtable}}
+\usepackage{{array}}
+\usepackage{{hyperref}}
+\hypersetup{{colorlinks=true, linkcolor=blue, urlcolor=blue}}
+\usepackage{{microtype}}
+\usepackage{{geometry}}
+\geometry{{margin=2.5cm}}
+
+\title{{Praxis Reading-1 Evaluation Results}}
+\author{{llm\_evals / praxis\_reading\_1}}
+\date{{\today}}
+
+\begin{{document}}
+\maketitle
+
+\section{{Results}}
+
+{inputs}
+
+\end{{document}}
+"""
+    (latex_dir / "main.tex").write_text(main_tex, encoding="utf-8")
+
+
+def main():
+    """Demo: score the sample output, then build a LaTeX accuracy table."""
+    from llm_common.report.get_per_row_result import LLMInferPerRowReport
+    from llm_common.report.get_per_row_result import get_scored_file
+
+    # Score the raw LLM output if the scored CSV doesn't exist yet.
+    scored_path = LLMInferPerRowReport.get_output_path_hint(SAMPLE_LLMOUTPUT)
+    if not Path(scored_path).exists():
         get_scored_file(SAMPLE_LLMOUTPUT)
 
-    # --- load_responses (per-row) ---
-    print("\n=== load_responses() ===")
+    # Load the scored rows as typed reports (gold/pred/correct restored).
+    reports: List[LLMInferPerRowReport] = LLMInferPerRowReport.from_csv(scored_path)
 
-    rows = load_responses(scored_path)
-    n_success = sum(1 for r in rows if r["success"])
-    n_correct = sum(1 for r in rows if r["is_correct"])
-    print(f"  Loaded {len(rows)} rows  |  answered={n_success}  correct={n_correct}"
-          f"  acc={n_correct/n_success:.2%}" if n_success else "  no answered rows")
+    # Reshape into the {model, success, is_correct} rows generate_latex_table
+    # wants. The model name comes from each report's embedded model_settings
+    # (LLMInferInput.model), not the filename.
+    rows = [
+        {
+            "model"     : r.model,
+            "success"   : r.pred is not None,
+            "is_correct": r.correct,
+        }
+        for r in reports
+    ]
 
-    print("\n=== first 3 rows ===")
-    for row in rows[:3]:
-        cr = row["check_result"]
-        print(f"  {row['item_id']}  model={row['model']}  "
-              f"correct={row['is_correct']}  score={cr['score']}  "
-              f"latency_ms={row['latency_ms']:.0f}ms")
-        print(f"    {cr['reasoning']}")
+    overall_tex = generate_overall_latex_table(rows)
+    print(overall_tex)
 
-    # --- response_frame ---
-    print("\n=== response_frame() ===")
-    rf = response_frame(rows)
-    cols = ["item_id", "model", "success", "is_correct", "score",
-            "latency_ms", "prompt_tokens", "completion_tokens"]
-    print(rf[[c for c in cols if c in rf.columns]].to_string(index=False))
+    # Render the run's model_settings as a key/value table (secrets redacted).
+    settings_tex = generate_model_settings_table(reports)
+    print("\n" + settings_tex)
 
-    # --- load_report (aggregate) ---
-    print("\n=== load_report() ===")
-    report = load_report()
-    for m, s in report["models"].items():
-        print(f"  {m}: total={s['total']}  correct={s['correct']}"
-              f"  acc={s['accuracy']:.2%}")
+    # Collect the wrong questions into a LaTeX table: question, correct answer,
+    # the model's answer, and its reasoning/process.
+    error_tex = generate_error_table(reports)
+    print("\n" + error_tex)
 
-    # --- generate_latex_table (aggregate) ---
-    print("\n=== generate_latex_table() ===")
-    latex = generate_latex_table(rows)
-    print(latex)
-
-    # --- category helpers ---
-    print("\n=== category_response_files() ===")
-    for cat, paths in category_response_files().items():
-        print(f"  {cat}:")
-        for role, p in paths.items():
-            print(f"    {role}: {p}  exists={p.exists()}")
-
-    # --- messages (row 0) ---
-    print("\n=== messages (row 0) ===")
-    if rows:
-        for msg in rows[0]["messages"]:
-            print(f"  [{msg['role']:6s}] {str(msg['content'])[:100].replace(chr(10),' ')}…")
-
-    print("\nDone.")
+    # Write a combined document inputting all tables (overrides the single-table
+    # main.tex written by generate_overall_latex_table) and compile-ready.
+    _write_combined_document(
+        ["tab:praxis_reading", "tab:model_settings", "tab:praxis_errors"]
+    )
 
 
 if __name__ == "__main__":
     main()
+
+
