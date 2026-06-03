@@ -372,15 +372,38 @@ def generate_model_settings_table(
     return table_tex
 
 
-def _write_combined_document(table_labels: list[str]) -> None:
-    """Write ``latex/main.tex`` inputting every fragment in *table_labels*."""
+def _figure_block(relpath: str, caption: str, label: str, width: str = r"\linewidth") -> str:
+    """A centred ``figure`` environment embedding *relpath* (a PDF under latex/)."""
+    return "\n".join([
+        r"\begin{figure}[htbp]",
+        r"  \centering",
+        rf"  \includegraphics[width={width}]{{{relpath}}}",
+        rf"  \caption{{{caption}}}",
+        rf"  \label{{{label}}}",
+        r"\end{figure}",
+    ])
+
+
+def _write_combined_document(
+        table_labels: list[str],
+        figures: list[tuple[str, str, str]] | None = None,
+) -> None:
+    """Write ``latex/main.tex`` inputting every table fragment and figure.
+
+    *figures* is a list of ``(relpath, caption, label)`` tuples; each is embedded
+    with ``\\includegraphics`` (paths are relative to the ``latex/`` directory).
+    """
     latex_dir = Path(__file__).resolve().parent / "latex"
-    inputs = "\n".join(rf"\input{{tables/{lbl}}}" for lbl in table_labels)
+    blocks = [rf"\input{{tables/{lbl}}}" for lbl in table_labels]
+    for relpath, caption, label in (figures or []):
+        blocks.append(_figure_block(relpath, caption, label))
+    body = "\n\n".join(blocks)
     main_tex = rf"""\documentclass{{article}}
 \usepackage[utf8]{{inputenc}}
 \usepackage{{booktabs}}
 \usepackage{{longtable}}
 \usepackage{{array}}
+\usepackage{{graphicx}}
 \usepackage{{hyperref}}
 \hypersetup{{colorlinks=true, linkcolor=blue, urlcolor=blue}}
 \usepackage{{microtype}}
@@ -396,7 +419,7 @@ def _write_combined_document(table_labels: list[str]) -> None:
 
 \section{{Results}}
 
-{inputs}
+{body}
 
 \end{{document}}
 """
@@ -435,15 +458,33 @@ def main():
     settings_tex = generate_model_settings_table(reports)
     print("\n" + settings_tex)
 
+    # Nature-style plots of the numeric fields (prompt/completion/total tokens,
+    # latency): univariate distributions + multivariate pairwise relationships.
+    from llm_common.report.plot_numeric import generate_numeric_plots
+    latex_dir = Path(__file__).resolve().parent / "latex"
+    uni_pdf, multi_pdf = generate_numeric_plots(reports, latex_dir / "figures")
+    figures = [
+        (f"figures/{uni_pdf.name}",
+         r"Univariate distributions of the per-row numeric fields, conditioned "
+         r"on whether the answer was correct (histogram + KDE + rug).",
+         "fig:numeric_univariate"),
+        (f"figures/{multi_pdf.name}",
+         r"Pairwise relationships between the numeric fields, coloured by "
+         r"correctness: scatter (lower triangle), per-group distribution "
+         r"(diagonal), Pearson $r$ (upper triangle).",
+         "fig:numeric_multivariate"),
+    ]
+
     # Collect the wrong questions into a LaTeX table: question, correct answer,
     # the model's answer, and its reasoning/process.
     error_tex = generate_error_table(reports)
     print("\n" + error_tex)
 
-    # Write a combined document inputting all tables (overrides the single-table
-    # main.tex written by generate_overall_latex_table) and compile-ready.
+    # Write a combined document with all tables + figures (overrides the
+    # single-table main.tex written by generate_overall_latex_table).
     _write_combined_document(
-        ["tab:praxis_reading", "tab:model_settings", "tab:praxis_errors"]
+        ["tab:praxis_reading", "tab:model_settings", "tab:praxis_errors"],
+        figures=figures,
     )
 
 

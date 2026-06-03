@@ -3,6 +3,7 @@
 \usepackage{booktabs}
 \usepackage{longtable}
 \usepackage{array}
+\usepackage{graphicx}
 \usepackage{hyperref}
 \hypersetup{colorlinks=true, linkcolor=blue, urlcolor=blue}
 \usepackage{microtype}
@@ -19,7 +20,23 @@
 \section{Results}
 
 \input{tables/tab:praxis_reading}
+
 \input{tables/tab:model_settings}
+
 \input{tables/tab:praxis_errors}
+
+\begin{figure}[htbp]
+  \centering
+  \includegraphics[width=\linewidth]{figures/numeric_univariate.pdf}
+  \caption{Univariate distributions of the per-row numeric fields, conditioned on whether the answer was correct (histogram + KDE + rug).}
+  \label{fig:numeric_univariate}
+\end{figure}
+
+\begin{figure}[htbp]
+  \centering
+  \includegraphics[width=\linewidth]{figures/numeric_multivariate.pdf}
+  \caption{Pairwise relationships between the numeric fields, coloured by correctness: scatter (lower triangle), per-group distribution (diagonal), Pearson $r$ (upper triangle).}
+  \label{fig:numeric_multivariate}
+\end{figure}
 
 \end{document}
