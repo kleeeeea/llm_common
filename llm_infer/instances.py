@@ -210,9 +210,12 @@ class LLMInferInput(object):
     # LLMInferOutput.to_dict() can produce a self-contained record without any
     # external dict merge.
     extra: Dict[str, Any] = field(default_factory=dict)
+    # Stable row identifier — a normal dataclass field (not a property) so it
+    # can be read, compared, and used in dataclasses.replace() without indirection.
+    # Populated from extra['id'] in __post_init__ when not passed explicitly.
+    id: str = ""
 
     def __post_init__(self) -> None:
-
         ms = (self.model_settings if self.model_settings is not None else ModelSettings())
 
         image_data_urls = [u.strip() for u in (self.image_data_urls or ()) if u.strip()]
@@ -223,6 +226,9 @@ class LLMInferInput(object):
             raise ValueError("prompt is empty")
         if not ms.system_input:
             raise ValueError("system_input is empty")
+        # Auto-populate id from extra when not provided explicitly.
+        if not self.id and self.extra:
+            object.__setattr__(self, "id", str(self.extra.get("id", "")))
 
     @classmethod
     def from_dict(
@@ -244,13 +250,66 @@ class LLMInferInput(object):
                 f"row is missing required field(s): {missing}; "
                 f"got {list(row.keys())}"
             )
+        import math
+        # pandas uses float('nan') for missing CSV cells; json.dumps would
+        # emit the bare token NaN which is not valid JSON — normalise to None.
+        sanitised = {
+            k: (None if isinstance(v, float) and math.isnan(v) else v)
+            for k, v in row.items()
+        }
         return cls(
+            id=str(sanitised.get("id", "")),
             prompt=str(row["prompt"]),
             model_settings=model_settings,
             image_paths=image_paths,
             image_data_urls=image_data_urls,
-            extra=dict(row),
+            extra=sanitised,
         )
+
+    @classmethod
+    def from_csv(
+            cls,
+            path: "str | Path",
+            model_settings: "Optional[ModelSettings]" = None,
+    ) -> "list[LLMInferInput]":
+        """Load a CSV file and convert every row to an instance via ``from_dict``.
+
+        NaN values (pandas missing cells) are normalised to ``None`` inside
+        ``from_dict``, so the resulting ``extra`` dicts are JSON-safe.
+        Replaces the inline ``pd.read_csv(...).to_dict("records")`` +
+        list-comprehension pattern in ``run.py``.
+        """
+        import pandas as pd
+        rows = pd.read_csv(path).to_dict("records")
+        return [cls.from_dict(row, model_settings=model_settings) for row in rows]
+
+    @classmethod
+    def from_jsonl(
+            cls,
+            path: "str | Path",
+            model_settings: "Optional[ModelSettings]" = None,
+    ) -> "list[LLMInferInput]":
+        """Deserialise a JSONL file into a list of instances.
+
+        Each non-empty line is parsed as JSON and forwarded to ``cls.from_dict``.
+        When called as ``LLMInferOutput.from_jsonl(...)`` the subclass classmethod
+        is inherited automatically, so output fields are populated correctly via
+        ``LLMInferOutput.from_dict``.
+
+        Replaces the inline resume-loading loop in
+        ``llm_common/llm_infer/run.py:82``.
+        """
+        instances = []
+        for raw in Path(path).read_text(encoding="utf-8").splitlines():
+            raw = raw.strip()
+            if not raw:
+                continue
+            try:
+                record = json.loads(raw)
+            except json.JSONDecodeError:
+                continue
+            instances.append(cls.from_dict(record, model_settings=model_settings))
+        return instances
 
 
 @dataclass(frozen=True)
@@ -270,6 +329,40 @@ class LLMInferOutput(LLMInferInput):
     total_tokens: Optional[int] = None
     latency_ms: Optional[float] = None
 
+    @classmethod
+    def from_dict(
+            cls,
+            row: Dict[str, Any],
+            model_settings: Optional["ModelSettings"] = None,
+            image_paths: Optional[Sequence[Any]] = None,
+            image_data_urls: Optional[Sequence[str]] = None,
+    ) -> "LLMInferOutput":
+        """Construct from a JSONL/CSV record dict, populating all output fields.
+
+        NaN values are normalised to ``None``.  ``model_settings`` embedded in
+        the record (written by ``to_dict``) is ignored in favour of the
+        explicitly supplied value so callers stay in control of the config.
+        """
+        import math
+        sanitised: Dict[str, Any] = {
+            k: (None if isinstance(v, float) and math.isnan(v) else v)
+            for k, v in row.items()
+        }
+        return cls(
+            id                = str(sanitised.get("id", "")),
+            prompt            = str(sanitised.get("prompt", "") or ""),
+            model_settings    = model_settings,
+            image_paths       = image_paths,
+            image_data_urls   = image_data_urls,
+            extra             = sanitised,
+            llm_response      = str(sanitised.get("llm_response", "") or ""),
+            reasoning         = sanitised.get("reasoning") or None,
+            prompt_tokens     = sanitised.get("prompt_tokens"),
+            completion_tokens = sanitised.get("completion_tokens"),
+            total_tokens      = sanitised.get("total_tokens"),
+            latency_ms        = sanitised.get("latency_ms"),
+        )
+
     def to_dict(self) -> Dict[str, Any]:
         ms = self.model_settings
         # Start with the original input row (id + all extra CSV columns) so
@@ -288,4 +381,51 @@ class LLMInferOutput(LLMInferInput):
             d["model_settings"] = _asdict(ms)
         return d
 
+    @classmethod
+    def to_csv(
+            cls,
+            outputs: "list[Optional[LLMInferOutput]]",
+            fallback_rows: "list[Dict[str, Any]]",
+            path: "str | Path",
+    ) -> Path:
+        """Write outputs to a CSV file, preserving original row order.
+
+        For each position ``i``:
+        - If ``outputs[i]`` is not None, serialise via ``to_dict()``.
+        - Otherwise fall back to ``fallback_rows[i]`` (the original input row).
+
+        Moves the logic from ``llm_common/llm_infer/run.py:120``.
+        """
+        import pandas as pd
+        output_rows = [
+            out.to_dict() if out is not None else fallback_rows[i]
+            for i, out in enumerate(outputs)
+        ]
+        path = Path(path)
+        pd.DataFrame(output_rows).to_csv(path, index=False)
+        return path
+
+
+    @classmethod
+    def get_output_path_hint(
+            cls,
+            input_path: "str | Path",
+            model: str,
+    ) -> Path:
+        """Compute the default output path for inference results.
+
+        Unifies the two conventions in ``run.py``:
+
+        * **CSV file** (``run.py:84``): same directory, stem gets the
+          ``_batch_infer_<model>`` suffix →
+          ``data/prompts/file.csv`` → ``data/prompts/file_batch_infer_model.csv``
+
+        * **Directory** (``run.py:132``): a sibling directory whose name gets
+          the suffix →
+          ``data/prompts/`` → ``data/prompts_batch_infer_model/``
+        """
+        p = Path(input_path)
+        if p.is_dir():
+            return p.parent / (p.name + "_batch_infer_" + model)
+        return p.with_stem(p.stem + "_batch_infer_" + model)
 

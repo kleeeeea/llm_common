@@ -10,16 +10,15 @@ from typing import Any
 from typing import Dict
 from typing import Optional
 
-import pandas as pd
 
 from llm_common.llm_infer.api_info.dataclass_ import DEFAULT_32B_OFFICIAL_API
 from llm_common.llm_infer.api_info.dataclass_ import GEMINI_API
 from llm_common.llm_infer.api_info.dataclass_ import MODEL_TO_APICONFIG
 from llm_common.llm_infer.api_info.dataclass_ import apiconfig_for_model
-from llm_common.llm_infer.call import ModelSettings
-from llm_common.llm_infer.call import call_openai
+from llm_common.llm_infer.call_by_single_instance import call_openai
 from llm_common.llm_infer.instances import LLMInferInput
 from llm_common.llm_infer.instances import LLMInferOutput
+from llm_common.llm_infer.instances import ModelSettings
 from llm_common.llm_infer.instances import load_system_input  # noqa: F401  re-exported
 from llm_common.llm_infer.instances import response_record_to_prompt_messages  # noqa: F401  re-exported
 from llm_common.llm_infer.test.data.index import LLM_INFER_TEST_SAMPLE_BATCH_PROMPT_CSV_PATH
@@ -59,15 +58,12 @@ _OUTPUT_ONLY_FIELDS = [
 ]
 
 
-def cached_batch_call_file(
+def get_llm_output_from_file(
         csv_path: Path = LLM_INFER_TEST_SAMPLE_BATCH_PROMPT_CSV_PATH,
         apiconfig = DEFAULT_32B_OFFICIAL_API,
         max_workers: int = 1,
         output_path: Optional[Path] = None,
 ) -> Path:
-    csv_path = Path(csv_path)
-    rows: list[Dict[str, Any]] = pd.read_csv(csv_path).to_dict("records")
-
     model_settings = ModelSettings(
             api=apiconfig,
             max_tokens=12000,
@@ -78,17 +74,14 @@ def cached_batch_call_file(
     # Convert every row to LLMInferInput up-front: schema validation (required
     # columns, non-empty prompt) fires immediately for all rows before any LLM
     # calls are made.
-    inputs: list[LLMInferInput] = [
-        LLMInferInput.from_dict(row, model_settings=model_settings) for row in rows
-    ]
-    ids = [str(r["id"]) for r in rows]
+    csv_path = Path(csv_path)
+    inputs: list[LLMInferInput] = LLMInferInput.from_csv(csv_path, model_settings=model_settings)
+    # extra holds the NaN-sanitised original row; used as fallback in to_csv.
+    rows: list[Dict[str, Any]] = [inp.extra for inp in inputs]
+    ids = [inp.id for inp in inputs]
 
     if output_path is None:
-        output_dir = csv_path.parent.parent / (
-            csv_path.parent.name + "_batch_infer_" + model_settings.model
-        )
-        output_dir.mkdir(parents=True, exist_ok=True)
-        output_path = output_dir / csv_path.name
+        output_path = LLMInferOutput.get_output_path_hint(csv_path, model_settings.model)
 
     # One LLMInferOutput per row; None until the row is processed or resumed.
     outputs: list[Optional[LLMInferOutput]] = [None] * len(inputs)
@@ -98,27 +91,13 @@ def cached_batch_call_file(
     id_to_index = {row_id: i for i, row_id in enumerate(ids)}
     done_ids: set = set()
     if output_jsonl_path.exists():
-        for line in output_jsonl_path.read_text(encoding="utf-8").splitlines():
-            try:
-                record = json.loads(line)
-                row_id = str(record["id"])
-                done_ids.add(row_id)
-                if row_id in id_to_index:
-                    idx = id_to_index[row_id]
-                    field_vals: Dict[str, Any] = {}
-                    for f in _OUTPUT_ONLY_FIELDS:
-                        val = record.get(f.name)
-                        if val is None and f.default is not dataclasses.MISSING:
-                            val = f.default
-                        field_vals[f.name] = val
-                    outputs[idx] = LLMInferOutput(
-                        prompt=inputs[idx].prompt,
-                        model_settings=model_settings,
-                        extra=inputs[idx].extra,
-                        **field_vals,
-                    )
-            except (json.JSONDecodeError, KeyError):
-                pass
+        for resumed in LLMInferOutput.from_jsonl(output_jsonl_path, model_settings=model_settings):
+            row_id = resumed.id
+            if not row_id:
+                continue
+            done_ids.add(row_id)
+            if row_id in id_to_index:
+                outputs[id_to_index[row_id]] = resumed
 
     with ThreadPoolExecutor(max_workers=max_workers) as executor, output_jsonl_path.open("a", encoding="utf-8") as jsonl_file:
         futures = {
@@ -132,16 +111,12 @@ def cached_batch_call_file(
             record = outputs[row_index].to_dict()
             jsonl_file.write(json.dumps(record, ensure_ascii=False) + "\n")
             jsonl_file.flush()
-    # preserve original CSV row order (outputs[row_index] is indexed by input position)
-    output_rows = [
-        outputs[i].to_dict() if outputs[i] is not None else rows[i]
-        for i in range(len(rows))
-    ]
-    pd.DataFrame(output_rows).to_csv(output_path, index=False)
+    # preserve original CSV row order (outputs[i] is indexed by input position)
+    LLMInferOutput.to_csv(outputs, rows, output_path)
     print(f"saved to {output_path}")
     return output_path
 
-def cached_batch_call_directory(
+def get_llm_output_from_directory(
         directory: Path = LLM_INFER_TEST_SAMPLE_BATCH_PROMPT_CSV_PATH.parent,
         apiconfig=DEFAULT_32B_OFFICIAL_API,
         max_workers: int = 1,
@@ -152,11 +127,11 @@ def cached_batch_call_directory(
     Returns a list of output CSV paths (one per input file).
     """
     directory = Path(directory)
-    output_dir = directory.parent / (directory.name + "_batch_infer_" + apiconfig.model)
+    output_dir = LLMInferOutput.get_output_path_hint(directory, apiconfig.model)
     results: list[Path] = []
     for csv_path in sorted(directory.glob("*.csv")):
         results.append(
-            cached_batch_call_file(
+            get_llm_output_from_file(
                 csv_path=csv_path,
                 apiconfig=apiconfig,
                 max_workers=max_workers,
@@ -187,11 +162,9 @@ def main():
 
     apiconfig = apiconfig_for_model(args.model)
     csv_path = Path(args.csv_path)
-    output_dir = csv_path.parent.parent / (
-        csv_path.parent.name + "_batch_infer_" + apiconfig.model
-    )
+    output_dir = LLMInferOutput.get_output_path_hint(csv_path.parent, apiconfig.model)
     output_dir.mkdir(parents=True, exist_ok=True)
-    cached_batch_call_file(
+    get_llm_output_from_file(
         csv_path=csv_path,
         apiconfig=apiconfig,
         max_workers=args.max_workers,
