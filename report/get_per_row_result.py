@@ -1,8 +1,44 @@
 import re
 from dataclasses import dataclass
+from enum import StrEnum
 from pathlib import Path
 
 from llm_common.llm_infer.instances import LLMInferOutput
+
+
+class JudgeType(StrEnum):
+    """How a row was scored.
+
+    A ``StrEnum`` so members *are* their string value — they compare equal to
+    the raw strings and serialise to plain text in CSV/JSON without special
+    handling.
+    """
+
+    # only these 2 , in fact
+    MCQ            = "mcq"             # objective letter match
+    LLM_JUDGE      = "llm_judge"      # subjective, generic LLM judge
+
+    # RULE           = "rule"           # objective rule-based check
+    # ATTITUDE_JUDGE = "attitude_judge"  # subjective, attitude-specific judge
+
+    @classmethod
+    def coerce(cls, value) -> "JudgeType":
+        """Best-effort conversion of an arbitrary value to a JudgeType.
+
+        Unknown values are bucketed by name: anything containing ``judge`` is
+        treated as a subjective LLM judge, otherwise objective ``mcq`` — so the
+        field is always a valid enum member (back-compat: ``None`` -> ``mcq``).
+        """
+        if isinstance(value, cls):
+            return value
+        if value is None:
+            return cls.MCQ
+        s = str(value).strip().lower()
+        try:
+            return cls(s)
+        except ValueError:
+            return cls.LLM_JUDGE if "judge" in s else cls.MCQ
+
 
 @dataclass(frozen=True)
 class LLMInferPerRowReport(LLMInferOutput):
@@ -13,24 +49,44 @@ class LLMInferPerRowReport(LLMInferOutput):
     which already inlines ``extra`` + all output fields.
     """
 
+    # objective (mcq / rule) scoring
     gold   : str | None = None
     pred   : str | None = None
     correct: bool       = False
+
+    # subjective (llm_judge) scoring
+    score          : float | None = None  # numeric judge score
+    judge_reasoning: str | None   = None  # the judge's explanation
+
+    # Constrained to the JudgeType enum; defaults to MCQ for backward
+    # compatibility with older scored files that predate this field.
+    judge_type: JudgeType = JudgeType.MCQ
 
     def __post_init__(self) -> None:
         # Skip model_settings / system_input validation — reports are built
         # from already-completed inference outputs, not live inference configs.
         image_data_urls = [u.strip() for u in (self.image_data_urls or ()) if u.strip()]
         object.__setattr__(self, "image_data_urls", tuple(image_data_urls))
+        # Normalise judge_type (callers pass plain strings from CSV/JSON).
+        object.__setattr__(self, "judge_type", JudgeType.coerce(self.judge_type))
 
     @classmethod
     def from_output(
             cls,
             out: LLMInferOutput,
-            gold: str | None,
-            pred: str | None,
+            gold: str | None = None,
+            pred: str | None = None,
+            *,
+            score: float | None = None,
+            judge_reasoning: str | None = None,
+            judge_type: "JudgeType | str" = JudgeType.MCQ,
     ) -> "LLMInferPerRowReport":
-        """Create a scored report from an existing ``LLMInferOutput``."""
+        """Create a scored report from an existing ``LLMInferOutput``.
+
+        Objective (mcq/rule): pass ``gold`` / ``pred`` — ``correct`` is derived.
+        Subjective (llm_judge): pass ``score`` / ``judge_reasoning`` and
+        ``judge_type="llm_judge"``.
+        """
         correct = gold is not None and pred is not None and gold == pred
         return cls(
             id                = out.id,
@@ -46,13 +102,19 @@ class LLMInferPerRowReport(LLMInferOutput):
             gold              = gold,
             pred              = pred,
             correct           = correct,
+            score             = score,
+            judge_reasoning   = judge_reasoning,
+            judge_type        = judge_type,
         )
 
     def to_dict(self) -> dict:
         d = super().to_dict()
-        d["gold"]    = self.gold
-        d["pred"]    = self.pred
-        d["correct"] = self.correct
+        d["gold"]            = self.gold
+        d["pred"]            = self.pred
+        d["correct"]        = self.correct
+        d["score"]           = self.score
+        d["judge_reasoning"] = self.judge_reasoning
+        d["judge_type"]      = str(self.judge_type)  # plain str for CSV/JSON
         return d
 
     @classmethod
@@ -81,6 +143,10 @@ class LLMInferPerRowReport(LLMInferOutput):
             gold              = e.get("gold"),
             pred              = e.get("pred"),
             correct           = bool(e.get("correct")),
+            score             = e.get("score"),
+            judge_reasoning   = e.get("judge_reasoning"),
+            # back-compat: rows without judge_type are objective MCQ.
+            judge_type        = e.get("judge_type") or "mcq",
         )
 
     @classmethod
@@ -142,7 +208,7 @@ def get_scored_file(
     n_correct  = sum(1 for r in reports if r.correct)
     scored_path = LLMInferPerRowReport.get_output_path_hint(llm_response_file)
 
-    
+
 
     # Inherited from LLMInferOutput: serialises each report via to_dict()
     # (which appends gold/pred/correct). No row is None, so fallback is unused.
