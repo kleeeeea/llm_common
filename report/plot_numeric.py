@@ -219,7 +219,15 @@ def _linspace(lo: float, hi: float, n: int) -> list[float]:
 
 
 def generate_numeric_plots(reports: list, out_dir: Path | str) -> List[Path]:
-    """Build both the univariate and multivariate figures. Returns their paths."""
+    """Build the univariate + multivariate figures. Returns their paths.
+
+    Returns an empty list (skips plotting) when every numeric field is empty —
+    e.g. backfilled runs whose source had no token / latency data — so the
+    report doesn't embed blank axes.
+    """
     out_dir = Path(out_dir)
     df = numeric_frame(reports)
+    if not df[NUMERIC_FIELDS].notna().to_numpy().any():
+        print("numeric fields are all empty — skipping plots")
+        return []
     return [plot_univariate(df, out_dir), plot_multivariate(df, out_dir)]

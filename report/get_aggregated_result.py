@@ -176,6 +176,9 @@ _LATEX_SPECIAL = {
     "&": r"\&", "%": r"\%", "$": r"\$", "#": r"\#", "_": r"\_",
     "{": r"\{", "}": r"\}",
     "~": r"\textasciitilde{}", "^": r"\textasciicircum{}",
+    # In LaTeX text mode bare < / > render as inverted ! / ? — escape them so
+    # e.g. <think>…</think> tags display literally.
+    "<": r"\textless{}", ">": r"\textgreater{}",
 }
 
 
@@ -259,11 +262,13 @@ def generate_error_table(
         passage   = _latex_cell((r.extra or {}).get("passage", ""), preserve_newlines=True, strip_line_numbers=True) or r"\textit{--}"
         question  = _latex_cell((r.extra or {}).get("question", ""), preserve_newlines=True)
         gold      = _latex_cell(r.gold)
-        model_ans = _latex_cell(r.pred)
-        raw       = _latex_cell(r.llm_response)
-        if raw and raw.upper() != model_ans.upper():
-            model_ans = f"{model_ans} ({raw})"
-        reasoning = _latex_cell(r.reasoning or "", preserve_newlines=True) or r"\textit{--}"
+        # Model row: just the extracted answer (letter / judge score).
+        model_ans = _latex_cell(r.pred) or _latex_cell(r.score) or r"\textit{--}"
+        # Reasoning row: the model's full response / thinking — prefer an
+        # explicit reasoning/judge field, else the raw llm_response (which for
+        # praxis carries the <think>…</think> block).
+        reasoning_src = r.reasoning or r.judge_reasoning or r.llm_response or ""
+        reasoning = _latex_cell(reasoning_src, preserve_newlines=True) or r"\textit{--}"
 
         # One field per row; the ID heads the block spanning both columns.
         lines.append(rf"  \multicolumn{{2}}{{@{{}}l}}{{\textbf{{{_latex_cell(r.id)}}}}} \\")
@@ -425,19 +430,28 @@ def _write_combined_document(
 """
     (latex_dir / "main.tex").write_text(main_tex, encoding="utf-8")
 
+def get_aggregated_result_main(scored_paths: "list | None" = None):
+    """Build the LaTeX report from one or more scored CSVs.
 
-def main():
-    """Demo: score the sample output, then build a LaTeX accuracy table."""
+    *scored_paths*: the scored CSVs to aggregate (their reports are merged so a
+    multi-model run produces one combined report). When omitted, falls back to
+    scoring + using the bundled SAMPLE_LLMOUTPUT.
+    """
     from llm_common.report.get_per_row_result import LLMInferPerRowReport
     from llm_common.report.get_per_row_result import get_scored_file
 
-    # Score the raw LLM output if the scored CSV doesn't exist yet.
-    scored_path = LLMInferPerRowReport.get_output_path_hint(SAMPLE_LLMOUTPUT)
-    if not Path(scored_path).exists():
-        get_scored_file(SAMPLE_LLMOUTPUT)
-
-    # Load the scored rows as typed reports (gold/pred/correct restored).
-    reports: List[LLMInferPerRowReport] = LLMInferPerRowReport.from_csv(scored_path)
+    if scored_paths:
+        # Merge the per-row reports from every scored CSV.
+        reports: List[LLMInferPerRowReport] = []
+        for p in scored_paths:
+            if p is not None and Path(p).exists():
+                reports.extend(LLMInferPerRowReport.from_csv(p))
+    else:
+        # Fallback demo: score the bundled sample if needed, then load it.
+        scored_path = LLMInferPerRowReport.get_output_path_hint(SAMPLE_LLMOUTPUT)
+        if not Path(scored_path).exists():
+            get_scored_file(SAMPLE_LLMOUTPUT)
+        reports = LLMInferPerRowReport.from_csv(scored_path)
 
     # Reshape into the {model, success, is_correct} rows generate_latex_table
     # wants. The model name comes from each report's embedded model_settings
@@ -462,18 +476,21 @@ def main():
     # latency): univariate distributions + multivariate pairwise relationships.
     from llm_common.report.plot_numeric import generate_numeric_plots
     latex_dir = Path(__file__).resolve().parent / "latex"
-    uni_pdf, multi_pdf = generate_numeric_plots(reports, latex_dir / "figures")
-    figures = [
-        (f"figures/{uni_pdf.name}",
-         r"Univariate distributions of the per-row numeric fields, conditioned "
-         r"on whether the answer was correct (histogram + KDE + rug).",
-         "fig:numeric_univariate"),
-        (f"figures/{multi_pdf.name}",
-         r"Pairwise relationships between the numeric fields, coloured by "
-         r"correctness: scatter (lower triangle), per-group distribution "
-         r"(diagonal), Pearson $r$ (upper triangle).",
-         "fig:numeric_multivariate"),
-    ]
+    plot_paths = generate_numeric_plots(reports, latex_dir / "figures")
+    figures = []
+    if plot_paths:
+        uni_pdf, multi_pdf = plot_paths
+        figures = [
+            (f"figures/{uni_pdf.name}",
+             r"Univariate distributions of the per-row numeric fields, conditioned "
+             r"on whether the answer was correct (histogram + KDE + rug).",
+             "fig:numeric_univariate"),
+            (f"figures/{multi_pdf.name}",
+             r"Pairwise relationships between the numeric fields, coloured by "
+             r"correctness: scatter (lower triangle), per-group distribution "
+             r"(diagonal), Pearson $r$ (upper triangle).",
+             "fig:numeric_multivariate"),
+        ]
 
     # Collect the wrong questions into a LaTeX table: question, correct answer,
     # the model's answer, and its reasoning/process.
@@ -489,6 +506,6 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    get_aggregated_result_main()
 
 

@@ -52,7 +52,7 @@ def backfill(output_jsonl: Path, source_jsonl: Path) -> int:
     return added
 
 
-def main() -> list[Path]:
+def backfill_praxis_main() -> list[Path]:
     # Same path get_llm_output_from_file would pick (passed explicitly so the
     # seed and the run agree on the resume jsonl).
     from llm_common.llm_infer.api_info.dataclass_ import DEFAULT_32B_INNOSPARK_API
@@ -80,4 +80,4 @@ def main() -> list[Path]:
 
 
 if __name__ == "__main__":
-    main()
+    backfill_praxis_main()

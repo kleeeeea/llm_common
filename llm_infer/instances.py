@@ -241,8 +241,12 @@ class LLMInferInput(object):
                 ms = ast.literal_eval(ms)
             except (ValueError, SyntaxError):
                 ms = None
-        if isinstance(ms, dict) and ms.get("model"):
-            return str(ms["model"])
+        if isinstance(ms, dict):
+            # model lives at the top level (legacy) or nested under ``api``
+            # (current ModelSettings serialises it inside the ApiConfig).
+            m = ms.get("model") or (ms.get("api") or {}).get("model")
+            if m:
+                return str(m)
         if self.model_settings is not None and self.model_settings.model:
             return self.model_settings.model
         return ""

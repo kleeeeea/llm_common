@@ -191,7 +191,7 @@ SAMPLE_LLMOUTPUT = '/Users/l/klee_code/git_repos/llm_evals/parse_evaluation/prax
 
 def get_scored_file(
         llm_response_file: str
-) -> None:
+) -> Path:
     outputs = LLMInferOutput.from_csv(llm_response_file)
 
     reports: list[LLMInferPerRowReport] = [
@@ -218,6 +218,7 @@ def get_scored_file(
     if n_answered:
         print(f"  answered        : {n_answered}/{n}")
         print(f"  acc (answered)  : {n_correct}/{n_answered} = {n_correct / n_answered:.2%}")
+    return Path(scored_path)
 
 
 if __name__ == "__main__":
