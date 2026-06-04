@@ -61,52 +61,125 @@ def model_from_path(path: str | Path) -> str:
 # ---------------------------------------------------------------------------
 
 
+# Subjective judges (llm_judge / attitude_judge) score on a 1–10 scale.
+JUDGE_MAX_SCORE = 10.0
+
+
+def _normalized_score(r) -> float | None:
+    """Per-row score in ``[0, 1]`` so objective + subjective rows can be mixed.
+
+    - subjective (judge): ``score / JUDGE_MAX_SCORE``
+    - objective (mcq/rule, answered): ``1.0`` if correct else ``0.0``
+    - unanswered: ``None``
+    """
+    if getattr(r, "score", None) is not None:
+        return float(r.score) / JUDGE_MAX_SCORE
+    if r.pred is not None:
+        return 1.0 if r.correct else 0.0
+    return None
+
+
+def _cat_display(category: str) -> str:
+    """Short English label for a category dir (``01_기능_skills`` → ``Skills``)."""
+    if not category:
+        return "Overall"
+    return category.split("_")[-1].title()
+
+
+def _group_by_model(reports: list) -> dict[str, dict[str, dict[str, float]]]:
+    """Group reports as ``model -> category -> {total, score_sum}``.
+
+    Mixing objective (0/1) and subjective (score/10) rows by their normalized
+    score is the only sound way to aggregate the two — a plain correct/total
+    accuracy would throw away the subjective rows' graded scores. Splitting by
+    category lets each one be reported separately, plus an overall.
+    """
+    def _blank():
+        return {"total": 0, "answered": 0, "correct": 0, "score_sum": 0.0}
+
+    stats: dict[str, dict[str, dict[str, float]]] = defaultdict(
+        lambda: defaultdict(_blank)
+    )
+    for r in reports:
+        model = r.model or "unknown"
+        category = (r.extra or {}).get("category", "") or ""
+        ns = _normalized_score(r)
+        for cat in (category, "__overall__"):
+            cell = stats[model][cat]
+            cell["total"] += 1
+            if ns is not None:
+                cell["answered"] += 1
+                cell["score_sum"] += ns
+            if r.correct:
+                cell["correct"] += 1
+    return {m: dict(c) for m, c in stats.items()}
+
+
 def generate_overall_latex_table(
-        rows: list[dict[str, Any]],
+        stats: dict[str, dict[str, dict[str, float]]],
         caption: str = "",
         label: str = "tab:praxis_reading",
 ) -> str:
-    """Aggregate ``load_responses`` rows per model → compact LaTeX accuracy table.
+    """Per-model × per-category continuous-score matrix.
 
-    Writes ``latex/tables/<label>.tex``, ``latex/main.tex``, and
-    ``latex/compile.sh`` as side-effects (mirroring TeaCH-main/nature/ layout).
-    Returns the table fragment as a string.
+    Each cell is the mean normalized score for that (model, category): objective
+    rows count as 0/1, subjective (judge) rows as ``score/10``. The last column
+    is the overall mean across all categories. With exactly two models an extra
+    ``Δ`` row shows the per-column difference (second − first).
     """
-    stats: dict[str, dict[str, int]] = defaultdict(
-        lambda: {"total": 0, "answered": 0, "correct": 0}
+    def _score(cell: dict[str, float] | None) -> float | None:
+        if not cell or not cell["total"]:
+            return None
+        return cell["score_sum"] / cell["total"] * 100
+
+    # All categories present (excluding the synthetic overall bucket), sorted.
+    categories = sorted(
+        {c for m in stats for c in stats[m] if c != "__overall__"}
     )
-    for row in rows:
-        model = row.get("model", "unknown")
-        stats[model]["total"] += 1
-        if row.get("success"):
-            stats[model]["answered"] += 1
-        if row.get("is_correct"):
-            stats[model]["correct"] += 1
+    col_keys = categories + ["__overall__"]
+    headers = [_cat_display(c) if c != "__overall__" else "Overall" for c in col_keys]
 
     if not caption:
         caption = (
-            r"Praxis Reading MCQ accuracy on the sample set. "
-            r"Acc\textsubscript{all} = correct / total; "
-            r"Acc\textsubscript{ans} = correct / answered."
+            r"Continuous score per model and category (objective: correct = 1; "
+            r"subjective: judge score / 10; cell = mean normalized score)."
         )
 
+    col_spec = "l" + " r" * len(col_keys)
+    head_row = r"    \textbf{Model} & " + " & ".join(
+        rf"\textbf{{{h}}}" for h in headers
+    ) + r" \\"
     lines = [
-        r"\begin{table}[htbp]",
+        r"\begin{table}[H]",
         r"  \centering",
-        r"  \begin{tabular}{l r r r r r}",
+        rf"  \begin{{tabular}}{{{col_spec}}}",
         r"    \toprule",
-        r"    \textbf{Model} & \textbf{Total} & \textbf{Answered} & \textbf{Correct}"
-        r" & \textbf{Acc\textsubscript{all}} & \textbf{Acc\textsubscript{ans}} \\",
+        head_row,
         r"    \midrule",
     ]
-    for model, s in sorted(stats.items()):
-        n, ans, cor = s["total"], s["answered"], s["correct"]
-        acc_all = cor / n   * 100 if n   else 0.0
-        acc_ans = cor / ans * 100 if ans else 0.0
-        lines.append(
-            f"    {model} & {n} & {ans} & {cor}"
-            f" & {acc_all:.1f}\\% & {acc_ans:.1f}\\% \\\\"
-        )
+
+    def _row(label_: str, cells: list[float | None], pct: bool) -> str:
+        vals = []
+        for v in cells:
+            if v is None:
+                vals.append("---")
+            else:
+                vals.append(f"{v:+.1f}\\%" if pct else f"{v:.1f}\\%")
+        return f"    {label_} & " + " & ".join(vals) + r" \\"
+
+    ordered = sorted(stats.items())
+    for model, per_cat in ordered:
+        cells = [_score(per_cat.get(c)) for c in col_keys]
+        lines.append(_row(model, cells, pct=False))
+
+    if len(ordered) == 2:
+        (m1, c1), (m2, c2) = ordered
+        deltas = []
+        for c in col_keys:
+            v1, v2 = _score(c1.get(c)), _score(c2.get(c))
+            deltas.append(v2 - v1 if (v1 is not None and v2 is not None) else None)
+        lines.append(r"    \midrule")
+        lines.append(_row(f"$\\Delta$ ({m2} $-$ {m1})", deltas, pct=True))
     lines += [
         r"    \bottomrule",
         r"  \end{tabular}",
@@ -167,6 +240,60 @@ echo "==> Done: main.pdf"
 
     return table_tex
 
+
+def generate_category_table(
+        stats: dict[str, dict[str, dict[str, float]]],
+        category: str,
+        label: str,
+        caption: str = "",
+) -> str:
+    """Per-model detail table for a single *category* (same format as the old
+    overall table: Total / Answered / Correct / Score, plus a Δ row for two
+    models). Writes ``latex/tables/<label>.tex`` and returns the fragment."""
+    def _score(cell: dict[str, float] | None) -> float:
+        return cell["score_sum"] / cell["total"] * 100 if cell and cell["total"] else 0.0
+
+    disp = _cat_display(category)
+    if not caption:
+        caption = (
+            rf"{disp}: continuous score per model "
+            r"(objective: correct = 1; subjective: judge score / 10)."
+        )
+
+    lines = [
+        r"\begin{table}[H]",
+        r"  \centering",
+        r"  \begin{tabular}{l r r r r}",
+        r"    \toprule",
+        r"    \textbf{Model} & \textbf{Total} & \textbf{Answered} & \textbf{Correct}"
+        r" & \textbf{Score} \\",
+        r"    \midrule",
+    ]
+    ordered = sorted(stats.items())
+    for model, per_cat in ordered:
+        c = per_cat.get(category) or {"total": 0, "answered": 0, "correct": 0, "score_sum": 0.0}
+        n, ans, cor = int(c["total"]), int(c["answered"]), int(c["correct"])
+        lines.append(f"    {model} & {n} & {ans} & {cor} & {_score(c):.1f}\\% \\\\")
+    if len(ordered) == 2:
+        (m1, c1), (m2, c2) = ordered
+        d = _score(c2.get(category)) - _score(c1.get(category))
+        lines.append(r"    \midrule")
+        lines.append(f"    $\\Delta$ ({m2} $-$ {m1}) & & & & {d:+.1f}\\% \\\\")
+    lines += [
+        r"    \bottomrule",
+        r"  \end{tabular}",
+        f"  \\caption{{{caption}}}",
+        f"  \\label{{{label}}}",
+        r"\end{table}",
+    ]
+    table_tex = "\n".join(lines)
+
+    tables_dir = Path(__file__).resolve().parent / "latex" / "tables"
+    tables_dir.mkdir(parents=True, exist_ok=True)
+    (tables_dir / f"{label}.tex").write_text(table_tex, encoding="utf-8")
+    return table_tex
+
+
 _LATEX_UNICODE = {
     "‘": "'", "’": "'", "“": '"', "”": '"',
     "–": "--", "—": "---", "…": "...", " ": " ",
@@ -187,6 +314,7 @@ def _latex_cell(
         limit: int | None = None,
         preserve_newlines: bool = False,
         strip_line_numbers: bool = False,
+        max_lines: int | None = None,
 ) -> str:
     """Make arbitrary text safe for a LaTeX cell: normalise unicode, escape
     special characters, and collapse whitespace. Truncates only when *limit*
@@ -199,11 +327,21 @@ def _latex_cell(
     With ``strip_line_numbers=True`` a leading integer + space is removed from
     each line (drops the ``5``, ``10``, ``15`` … margin line-numbers embedded in
     the source passages). Only applies in ``preserve_newlines`` mode.
+
+    With ``max_lines`` (preserve_newlines mode) only the first N lines are kept
+    and a ``[… truncated]`` marker is appended — caps how much vertical space a
+    single cell (e.g. a long reasoning) can take.
     """
     s = str(text) if text is not None else ""
     for uni, ascii_ in _LATEX_UNICODE.items():
         s = s.replace(uni, ascii_)
     s = s.encode("ascii", "ignore").decode("ascii")  # drop any remaining non-ascii
+    # Dropping non-ascii (e.g. Chinese terms) can leave empty brackets/quotes
+    # like ``()`` / ``""`` — strip those husks so they don't litter the text.
+    s = re.sub(r"\(\s*\)", "", s)
+    s = re.sub(r"\[\s*\]", "", s)
+    s = re.sub(r'"\s*"', "", s)
+    s = re.sub(r"'\s*'", "", s)
 
     def _esc(t: str) -> str:
         return "".join(_LATEX_SPECIAL.get(ch, ch) for ch in t)
@@ -216,6 +354,9 @@ def _latex_cell(
                 ln = re.sub(r"^\d+\s+", "", ln)  # drop a leading margin line-number
             if ln:
                 cleaned.append(_esc(ln))
+        if max_lines is not None and len(cleaned) > max_lines:
+            cleaned = cleaned[:max_lines]
+            cleaned.append(r"\textit{[\ldots\ truncated]}")
         out = r" \newline ".join(cleaned)
     else:
         out = _esc(" ".join(s.split()))
@@ -225,10 +366,15 @@ def _latex_cell(
     return out
 
 
+# Max lines of reasoning shown per error block (keeps one block from filling a page).
+REASONING_MAX_LINES = 12
+
+
 def generate_error_table(
         reports: list,
         caption: str = "",
         label: str = "tab:praxis_errors",
+        per_model_limit: int | None = None,
 ) -> str:
     """Collect the *wrong* answered rows into a LaTeX ``longtable``.
 
@@ -236,12 +382,23 @@ def generate_error_table(
     two-column layout, so long question / reasoning text wraps across the full
     page width instead of being squeezed into a narrow column. Writes
     ``latex/tables/<label>.tex`` and returns the fragment string.
+
+    *per_model_limit*: keep only the first N errors per model (reasoning stays
+    full) — caps the report size when there are many long-reasoning errors.
     """
     errors = [r for r in reports if r.pred is not None and not r.correct]
 
+    if per_model_limit is not None:
+        grouped: dict[str, list] = defaultdict(list)
+        for r in errors:
+            grouped[r.model].append(r)
+        errors = [r for rs in grouped.values() for r in rs[:per_model_limit]]
+
     if not caption:
+        suffix = (f" (first {per_model_limit} per model)"
+                  if per_model_limit is not None else "")
         caption = (
-            r"Incorrectly answered Praxis Reading questions: gold answer vs.\ "
+            r"Incorrectly answered questions" + suffix + r": gold answer vs.\ "
             r"the model's prediction and reasoning."
         )
 
@@ -260,7 +417,10 @@ def generate_error_table(
         # No truncation — show the full text; keep the a./b./c. choices and
         # passage paragraphs on separate lines.
         passage   = _latex_cell((r.extra or {}).get("passage", ""), preserve_newlines=True, strip_line_numbers=True) or r"\textit{--}"
-        question  = _latex_cell((r.extra or {}).get("question", ""), preserve_newlines=True)
+        # Use the full prompt (question stem + A./B./C./D. options) so the
+        # answer choices are shown; fall back to the bare question.
+        e = r.extra or {}
+        question  = _latex_cell(e.get("prompt") or e.get("question", ""), preserve_newlines=True)
         gold      = _latex_cell(r.gold)
         # Model row: just the extracted answer (letter / judge score).
         model_ans = _latex_cell(r.pred) or _latex_cell(r.score) or r"\textit{--}"
@@ -268,7 +428,10 @@ def generate_error_table(
         # explicit reasoning/judge field, else the raw llm_response (which for
         # praxis carries the <think>…</think> block).
         reasoning_src = r.reasoning or r.judge_reasoning or r.llm_response or ""
-        reasoning = _latex_cell(reasoning_src, preserve_newlines=True) or r"\textit{--}"
+        # Cap reasoning length so one long block can't fill a page.
+        reasoning = _latex_cell(
+            reasoning_src, preserve_newlines=True, max_lines=REASONING_MAX_LINES,
+        ) or r"\textit{--}"
 
         # One field per row; the ID heads the block spanning both columns.
         lines.append(rf"  \multicolumn{{2}}{{@{{}}l}}{{\textbf{{{_latex_cell(r.id)}}}}} \\")
@@ -351,7 +514,7 @@ def generate_model_settings_table(
         caption = r"Model settings used to produce the responses (secrets redacted)."
 
     lines = [
-        r"\begin{table}[htbp]",
+        r"\begin{table}[H]",
         r"  \centering",
         r"  \begin{tabular}{@{}l p{10cm}@{}}",
         r"    \toprule",
@@ -380,7 +543,7 @@ def generate_model_settings_table(
 def _figure_block(relpath: str, caption: str, label: str, width: str = r"\linewidth") -> str:
     """A centred ``figure`` environment embedding *relpath* (a PDF under latex/)."""
     return "\n".join([
-        r"\begin{figure}[htbp]",
+        r"\begin{figure}[H]",
         r"  \centering",
         rf"  \includegraphics[width={width}]{{{relpath}}}",
         rf"  \caption{{{caption}}}",
@@ -392,8 +555,13 @@ def _figure_block(relpath: str, caption: str, label: str, width: str = r"\linewi
 def _write_combined_document(
         table_labels: list[str],
         figures: list[tuple[str, str, str]] | None = None,
+        trailing_table_labels: list[str] | None = None,
 ) -> None:
     """Write ``latex/main.tex`` inputting every table fragment and figure.
+
+    Order: *table_labels* → *figures* → *trailing_table_labels*. The trailing
+    slot is for long tables (e.g. the error longtable) that should come last so
+    they don't bury the figures / settings.
 
     *figures* is a list of ``(relpath, caption, label)`` tuples; each is embedded
     with ``\\includegraphics`` (paths are relative to the ``latex/`` directory).
@@ -402,6 +570,7 @@ def _write_combined_document(
     blocks = [rf"\input{{tables/{lbl}}}" for lbl in table_labels]
     for relpath, caption, label in (figures or []):
         blocks.append(_figure_block(relpath, caption, label))
+    blocks += [rf"\input{{tables/{lbl}}}" for lbl in (trailing_table_labels or [])]
     body = "\n\n".join(blocks)
     main_tex = rf"""\documentclass{{article}}
 \usepackage[utf8]{{inputenc}}
@@ -409,6 +578,7 @@ def _write_combined_document(
 \usepackage{{longtable}}
 \usepackage{{array}}
 \usepackage{{graphicx}}
+\usepackage{{float}}
 \usepackage{{hyperref}}
 \hypersetup{{colorlinks=true, linkcolor=blue, urlcolor=blue}}
 \usepackage{{microtype}}
@@ -453,20 +623,25 @@ def get_aggregated_result_main(scored_paths: "list | None" = None):
             get_scored_file(SAMPLE_LLMOUTPUT)
         reports = LLMInferPerRowReport.from_csv(scored_path)
 
-    # Reshape into the {model, success, is_correct} rows generate_latex_table
-    # wants. The model name comes from each report's embedded model_settings
-    # (LLMInferInput.model), not the filename.
-    rows = [
-        {
-            "model"     : r.model,
-            "success"   : r.pred is not None,
-            "is_correct": r.correct,
-        }
-        for r in reports
-    ]
-
-    overall_tex = generate_overall_latex_table(rows)
+    # Group reports by model (accumulating the continuous normalized score so
+    # objective + subjective items aggregate soundly), then render. With exactly
+    # two models the table also shows their score delta.
+    stats = _group_by_model(reports)
+    overall_tex = generate_overall_latex_table(stats)
     print(overall_tex)
+    if len(stats) == 2:
+        (m1, s1), (m2, s2) = sorted(stats.items())
+        ov = lambda s: (s["__overall__"]["score_sum"] / s["__overall__"]["total"] * 100
+                        if s.get("__overall__", {}).get("total") else 0.0)
+        print(f"\nΔ overall score ({m2} − {m1}): {ov(s2) - ov(s1):+.1f}%")
+
+    # One detail table per category (same format), in addition to the matrix.
+    categories = sorted({c for m in stats for c in stats[m] if c != "__overall__"})
+    category_labels: list[str] = []
+    for cat in categories:
+        lbl = f"tab:cat_{_cat_display(cat).lower()}"
+        generate_category_table(stats, cat, label=lbl)
+        category_labels.append(lbl)
 
     # Render the run's model_settings as a key/value table (secrets redacted).
     settings_tex = generate_model_settings_table(reports)
@@ -494,14 +669,15 @@ def get_aggregated_result_main(scored_paths: "list | None" = None):
 
     # Collect the wrong questions into a LaTeX table: question, correct answer,
     # the model's answer, and its reasoning/process.
-    error_tex = generate_error_table(reports)
+    error_tex = generate_error_table(reports, per_model_limit=20)
     print("\n" + error_tex)
 
-    # Write a combined document with all tables + figures (overrides the
-    # single-table main.tex written by generate_overall_latex_table).
+    # Order: score tables → model settings → figures → error table (last, since
+    # it's the longest and shouldn't bury the settings/figures).
     _write_combined_document(
-        ["tab:praxis_reading", "tab:model_settings", "tab:praxis_errors"],
+        ["tab:praxis_reading", *category_labels, "tab:model_settings"],
         figures=figures,
+        trailing_table_labels=["tab:praxis_errors"],
     )
 
 

@@ -4,6 +4,7 @@
 \usepackage{longtable}
 \usepackage{array}
 \usepackage{graphicx}
+\usepackage{float}
 \usepackage{hyperref}
 \hypersetup{colorlinks=true, linkcolor=blue, urlcolor=blue}
 \usepackage{microtype}
@@ -21,7 +22,29 @@
 
 \input{tables/tab:praxis_reading}
 
+\input{tables/tab:cat_skills}
+
+\input{tables/tab:cat_content}
+
+\input{tables/tab:cat_pedagogical}
+
+\input{tables/tab:cat_attitude}
+
 \input{tables/tab:model_settings}
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=\linewidth]{figures/numeric_univariate.pdf}
+  \caption{Univariate distributions of the per-row numeric fields, conditioned on whether the answer was correct (histogram + KDE + rug).}
+  \label{fig:numeric_univariate}
+\end{figure}
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=\linewidth]{figures/numeric_multivariate.pdf}
+  \caption{Pairwise relationships between the numeric fields, coloured by correctness: scatter (lower triangle), per-group distribution (diagonal), Pearson $r$ (upper triangle).}
+  \label{fig:numeric_multivariate}
+\end{figure}
 
 \input{tables/tab:praxis_errors}
 

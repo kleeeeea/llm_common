@@ -58,12 +58,14 @@ def _user_prompt(messages: list) -> str:
     ).strip()
 
 
-def _to_report(r: dict) -> LLMInferPerRowReport:
+def _to_report(r: dict, category: str = "") -> LLMInferPerRowReport:
     """Map one openlearnlm response record to an LLMInferPerRowReport.
 
     Objective rows (``check_type`` without ``judge``) keep the letter
     ``gold``/``pred``/``correct``; subjective rows (``*_judge``) carry the
     numeric ``score`` and the judge's ``judge_reasoning`` instead.
+    *category* is the benchmark category dir, carried through for per-category
+    aggregation.
     """
     usage = r.get("usage") or {}
     thinking = r.get("thinking_content")
@@ -78,6 +80,8 @@ def _to_report(r: dict) -> LLMInferPerRowReport:
     # round-trips (to_dict doesn't serialise the prompt field separately).
     extra = {
         "id"      : item_id,
+        "model"   : r.get("model", ""),   # so r.model resolves without model_settings
+        "category": category,             # for per-category aggregation
         "prompt"  : prompt,
         "question": r.get("question", ""),
         "answer"  : r.get("expected_answer", ""),
@@ -129,7 +133,8 @@ def backfill_one(src: Path, allowed_ids: set | None = None) -> Path | None:
         return None
 
     # Convert the openlearnlm responses straight into per-row reports.
-    reports = [_to_report(r) for r in rows]
+    category = src.parent.name
+    reports = [_to_report(r, category=category) for r in rows]
 
     # Dump to the inferred LLMInferPerRowReport path (…_scored.csv next to source).
     report_path = LLMInferPerRowReport.get_output_path_hint(src.with_suffix(".csv"))

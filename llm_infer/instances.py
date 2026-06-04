@@ -234,6 +234,11 @@ class LLMInferInput(object):
         ``model_settings=None``, so ``__post_init__`` fills in a *default*
         ModelSettings whose ``.model`` would otherwise mask the real value.
         """
+        # A direct ``model`` column in extra wins (e.g. openlearnlm records carry
+        # the model name as a field rather than inside model_settings).
+        direct = (self.extra or {}).get("model")
+        if direct:
+            return str(direct)
         ms = (self.extra or {}).get("model_settings")
         if isinstance(ms, str):
             import ast
