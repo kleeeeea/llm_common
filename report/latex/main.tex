@@ -18,9 +18,11 @@
 \begin{document}
 \maketitle
 
-\section{Results}
+\section{Overall scores}
 
 \input{tables/tab:praxis_reading}
+
+\section{Per-category scores}
 
 \input{tables/tab:cat_skills}
 
@@ -30,7 +32,85 @@
 
 \input{tables/tab:cat_attitude}
 
+\section{Per-instance model differences}
+
+\input{tables/tab:disagreement}
+
+\section{Per-instance answer comparison}
+
+\subsection{Skills: $\Delta \leq -75\%$}
+
+\input{tables/tab:cmp_skills_neg75}
+
+\subsection{Skills: $-75\% < \Delta \leq -50\%$}
+
+\input{tables/tab:cmp_skills_neg50}
+
+\subsection{Skills: $-50\% < \Delta \leq -25\%$}
+
+\input{tables/tab:cmp_skills_neg25}
+
+\subsection{Skills: $-25\% < \Delta < 0$}
+
+\input{tables/tab:cmp_skills_neg0}
+
+\subsection{Skills: $0 < \Delta < 25\%$}
+
+\input{tables/tab:cmp_skills_pos0}
+
+\subsection{Skills: $25\% \leq \Delta < 50\%$}
+
+\input{tables/tab:cmp_skills_pos25}
+
+\subsection{Skills: $50\% \leq \Delta < 75\%$}
+
+\input{tables/tab:cmp_skills_pos50}
+
+\subsection{Skills: $\Delta \geq 75\%$}
+
+\input{tables/tab:cmp_skills_pos75}
+
+\subsection{Content: $\Delta \leq -75\%$}
+
+\input{tables/tab:cmp_content_neg75}
+
+\subsection{Content: $\Delta \geq 75\%$}
+
+\input{tables/tab:cmp_content_pos75}
+
+\subsection{Pedagogical: $\Delta \leq -75\%$}
+
+\input{tables/tab:cmp_pedagogical_neg75}
+
+\subsection{Pedagogical: $\Delta \geq 75\%$}
+
+\input{tables/tab:cmp_pedagogical_pos75}
+
+\subsection{Attitude: $-75\% < \Delta \leq -50\%$}
+
+\input{tables/tab:cmp_attitude_neg50}
+
+\subsection{Attitude: $-50\% < \Delta \leq -25\%$}
+
+\input{tables/tab:cmp_attitude_neg25}
+
+\subsection{Attitude: $-25\% < \Delta < 0$}
+
+\input{tables/tab:cmp_attitude_neg0}
+
+\subsection{Attitude: $0 < \Delta < 25\%$}
+
+\input{tables/tab:cmp_attitude_pos0}
+
+\subsection{Attitude: $50\% \leq \Delta < 75\%$}
+
+\input{tables/tab:cmp_attitude_pos50}
+
+\section{Model settings}
+
 \input{tables/tab:model_settings}
+
+\section{Numeric field distributions}
 
 \begin{figure}[H]
   \centering
@@ -46,6 +126,22 @@
   \label{fig:numeric_multivariate}
 \end{figure}
 
-\input{tables/tab:praxis_errors}
+\section{Errors by category}
+
+\subsection{Skills}
+
+\input{tables/tab:err_skills}
+
+\subsection{Content}
+
+\input{tables/tab:err_content}
+
+\subsection{Pedagogical}
+
+\input{tables/tab:err_pedagogical}
+
+\subsection{Attitude}
+
+\input{tables/tab:err_attitude}
 
 \end{document}

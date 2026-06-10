@@ -2,26 +2,161 @@
 \providecommand\hyper@newdestlabel[2]{}
 \providecommand\HyField@AuxAddToFields[1]{}
 \providecommand\HyField@AuxAddToCoFields[2]{}
-\@writefile{toc}{\contentsline {section}{\numberline {1}Results}{1}{section.1}\protected@file@percent }
+\@writefile{toc}{\contentsline {section}{\numberline {1}Overall scores}{1}{section.1}\protected@file@percent }
 \@writefile{lot}{\contentsline {table}{\numberline {1}{\ignorespaces Continuous score per model and category (objective: correct = 1; subjective: judge score / 10; cell = mean normalized score).}}{1}{table.1}\protected@file@percent }
 \newlabel{tab:praxis_reading}{{1}{1}{Continuous score per model and category (objective: correct = 1; subjective: judge score / 10; cell = mean normalized score)}{table.1}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {2}Per-category scores}{1}{section.2}\protected@file@percent }
 \@writefile{lot}{\contentsline {table}{\numberline {2}{\ignorespaces Skills: continuous score per model (objective: correct = 1; subjective: judge score / 10).}}{1}{table.2}\protected@file@percent }
 \newlabel{tab:cat_skills}{{2}{1}{Skills: continuous score per model (objective: correct = 1; subjective: judge score / 10)}{table.2}{}}
 \@writefile{lot}{\contentsline {table}{\numberline {3}{\ignorespaces Content: continuous score per model (objective: correct = 1; subjective: judge score / 10).}}{1}{table.3}\protected@file@percent }
 \newlabel{tab:cat_content}{{3}{1}{Content: continuous score per model (objective: correct = 1; subjective: judge score / 10)}{table.3}{}}
 \@writefile{lot}{\contentsline {table}{\numberline {4}{\ignorespaces Pedagogical: continuous score per model (objective: correct = 1; subjective: judge score / 10).}}{1}{table.4}\protected@file@percent }
 \newlabel{tab:cat_pedagogical}{{4}{1}{Pedagogical: continuous score per model (objective: correct = 1; subjective: judge score / 10)}{table.4}{}}
+\gdef \LT@i {\LT@entry 
+    {3}{57.64459pt}\LT@entry 
+    {3}{63.52791pt}\LT@entry 
+    {1}{64.52751pt}\LT@entry 
+    {1}{79.79268pt}\LT@entry 
+    {3}{37.11122pt}}
 \@writefile{lot}{\contentsline {table}{\numberline {5}{\ignorespaces Attitude: continuous score per model (objective: correct = 1; subjective: judge score / 10).}}{2}{table.5}\protected@file@percent }
 \newlabel{tab:cat_attitude}{{5}{2}{Attitude: continuous score per model (objective: correct = 1; subjective: judge score / 10)}{table.5}{}}
-\@writefile{lot}{\contentsline {table}{\numberline {6}{\ignorespaces Model settings used to produce the responses (secrets redacted).}}{2}{table.6}\protected@file@percent }
-\newlabel{tab:model_settings}{{6}{2}{Model settings used to produce the responses (secrets redacted)}{table.6}{}}
-\@writefile{lof}{\contentsline {figure}{\numberline {1}{\ignorespaces Univariate distributions of the per-row numeric fields, conditioned on whether the answer was correct (histogram + KDE + rug).}}{2}{figure.1}\protected@file@percent }
-\newlabel{fig:numeric_univariate}{{1}{2}{Univariate distributions of the per-row numeric fields, conditioned on whether the answer was correct (histogram + KDE + rug)}{figure.1}{}}
-\@writefile{lof}{\contentsline {figure}{\numberline {2}{\ignorespaces Pairwise relationships between the numeric fields, coloured by correctness: scatter (lower triangle), per-group distribution (diagonal), Pearson $r$ (upper triangle).}}{3}{figure.2}\protected@file@percent }
-\newlabel{fig:numeric_multivariate}{{2}{3}{Pairwise relationships between the numeric fields, coloured by correctness: scatter (lower triangle), per-group distribution (diagonal), Pearson $r$ (upper triangle)}{figure.2}{}}
-\@writefile{lot}{\contentsline {table}{\numberline {7}{Incorrectly answered questions (first 20 per model): gold answer vs.\ the model's prediction and reasoning.}}{3}{table.7}\protected@file@percent }
-\newlabel{tab:praxis_errors}{{7}{3}{Incorrectly answered questions (first 20 per model): gold answer vs.\ the model's prediction and reasoning}{table.7}{}}
-\gdef \LT@i {\LT@entry 
+\@writefile{toc}{\contentsline {section}{\numberline {3}Per-instance model differences}{2}{section.3}\protected@file@percent }
+\@writefile{lot}{\contentsline {table}{\numberline {6}{Per-instance score differences ($\Delta = $ Innospark-1T $-$ Kimi-K2.6), grouped by magnitude; 161 of 570 shared items differ. Normalized scores (objective 0/1, subjective score/10).}}{2}{table.6}\protected@file@percent }
+\newlabel{tab:disagreement}{{6}{2}{Per-instance score differences ($\Delta = $ Innospark-1T $-$ Kimi-K2.6), grouped by magnitude; 161 of 570 shared items differ. Normalized scores (objective 0/1, subjective score/10)}{table.6}{}}
+\gdef \LT@ii {\LT@entry 
+    {3}{73.79268pt}\LT@entry 
+    {3}{361.65944pt}}
+\@writefile{toc}{\contentsline {section}{\numberline {4}Per-instance answer comparison}{4}{section.4}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {4.1}Skills: $\Delta \leq -75\%$}{4}{subsection.4.1}\protected@file@percent }
+\@writefile{lot}{\contentsline {table}{\numberline {7}{Skills per-instance answer comparison ($\Delta \leq -75\%$) for the 1 most divergent items: same question, each model's answer and reasoning.}}{4}{table.7}\protected@file@percent }
+\newlabel{tab:cmp_skills_neg75}{{7}{4}{Skills per-instance answer comparison ($\Delta \leq -75\%$) for the 1 most divergent items: same question, each model's answer and reasoning}{table.7}{}}
+\gdef \LT@iii {\LT@entry 
+    {3}{73.79268pt}\LT@entry 
+    {3}{361.65944pt}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {4.2}Skills: $-75\% < \Delta \leq -50\%$}{6}{subsection.4.2}\protected@file@percent }
+\@writefile{lot}{\contentsline {table}{\numberline {8}{Skills per-instance answer comparison ($-75\% < \Delta \leq -50\%$) for the 2 most divergent items: same question, each model's answer and reasoning.}}{6}{table.8}\protected@file@percent }
+\newlabel{tab:cmp_skills_neg50}{{8}{6}{Skills per-instance answer comparison ($-75\% < \Delta \leq -50\%$) for the 2 most divergent items: same question, each model's answer and reasoning}{table.8}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {4.3}Skills: $-50\% < \Delta \leq -25\%$}{9}{subsection.4.3}\protected@file@percent }
+\gdef \LT@iv {\LT@entry 
+    {3}{73.79268pt}\LT@entry 
+    {3}{361.65944pt}}
+\@writefile{lot}{\contentsline {table}{\numberline {9}{Skills per-instance answer comparison ($-50\% < \Delta \leq -25\%$) for the 9 most divergent items: same question, each model's answer and reasoning.}}{10}{table.9}\protected@file@percent }
+\newlabel{tab:cmp_skills_neg25}{{9}{10}{Skills per-instance answer comparison ($-50\% < \Delta \leq -25\%$) for the 9 most divergent items: same question, each model's answer and reasoning}{table.9}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {4.4}Skills: $-25\% < \Delta < 0$}{24}{subsection.4.4}\protected@file@percent }
+\gdef \LT@v {\LT@entry 
+    {3}{73.79268pt}\LT@entry 
+    {3}{361.65944pt}}
+\@writefile{lot}{\contentsline {table}{\numberline {10}{Skills per-instance answer comparison ($-25\% < \Delta < 0$) for the 15 most divergent items: same question, each model's answer and reasoning.}}{25}{table.10}\protected@file@percent }
+\newlabel{tab:cmp_skills_neg0}{{10}{25}{Skills per-instance answer comparison ($-25\% < \Delta < 0$) for the 15 most divergent items: same question, each model's answer and reasoning}{table.10}{}}
+\gdef \LT@vi {\LT@entry 
+    {3}{73.79268pt}\LT@entry 
+    {3}{361.65944pt}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {4.5}Skills: $0 < \Delta < 25\%$}{54}{subsection.4.5}\protected@file@percent }
+\@writefile{lot}{\contentsline {table}{\numberline {11}{Skills per-instance answer comparison ($0 < \Delta < 25\%$) for the 15 most divergent items: same question, each model's answer and reasoning.}}{54}{table.11}\protected@file@percent }
+\newlabel{tab:cmp_skills_pos0}{{11}{54}{Skills per-instance answer comparison ($0 < \Delta < 25\%$) for the 15 most divergent items: same question, each model's answer and reasoning}{table.11}{}}
+\gdef \LT@vii {\LT@entry 
+    {3}{73.79268pt}\LT@entry 
+    {3}{361.65944pt}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {4.6}Skills: $25\% \leq \Delta < 50\%$}{80}{subsection.4.6}\protected@file@percent }
+\@writefile{lot}{\contentsline {table}{\numberline {12}{Skills per-instance answer comparison ($25\% \leq \Delta < 50\%$) for the 7 most divergent items: same question, each model's answer and reasoning.}}{80}{table.12}\protected@file@percent }
+\newlabel{tab:cmp_skills_pos25}{{12}{80}{Skills per-instance answer comparison ($25\% \leq \Delta < 50\%$) for the 7 most divergent items: same question, each model's answer and reasoning}{table.12}{}}
+\gdef \LT@viii {\LT@entry 
+    {3}{73.79268pt}\LT@entry 
+    {3}{361.65944pt}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {4.7}Skills: $50\% \leq \Delta < 75\%$}{94}{subsection.4.7}\protected@file@percent }
+\@writefile{lot}{\contentsline {table}{\numberline {13}{Skills per-instance answer comparison ($50\% \leq \Delta < 75\%$) for the 9 most divergent items: same question, each model's answer and reasoning.}}{94}{table.13}\protected@file@percent }
+\newlabel{tab:cmp_skills_pos50}{{13}{94}{Skills per-instance answer comparison ($50\% \leq \Delta < 75\%$) for the 9 most divergent items: same question, each model's answer and reasoning}{table.13}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {4.8}Skills: $\Delta \geq 75\%$}{110}{subsection.4.8}\protected@file@percent }
+\gdef \LT@ix {\LT@entry 
+    {3}{73.79268pt}\LT@entry 
+    {3}{361.65944pt}}
+\@writefile{lot}{\contentsline {table}{\numberline {14}{Skills per-instance answer comparison ($\Delta \geq 75\%$) for the 1 most divergent items: same question, each model's answer and reasoning.}}{111}{table.14}\protected@file@percent }
+\newlabel{tab:cmp_skills_pos75}{{14}{111}{Skills per-instance answer comparison ($\Delta \geq 75\%$) for the 1 most divergent items: same question, each model's answer and reasoning}{table.14}{}}
+\gdef \LT@x {\LT@entry 
+    {3}{73.79268pt}\LT@entry 
+    {3}{361.65944pt}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {4.9}Content: $\Delta \leq -75\%$}{113}{subsection.4.9}\protected@file@percent }
+\@writefile{lot}{\contentsline {table}{\numberline {15}{Content per-instance answer comparison ($\Delta \leq -75\%$) for the 8 most divergent items: same question, each model's answer and reasoning.}}{113}{table.15}\protected@file@percent }
+\newlabel{tab:cmp_content_neg75}{{15}{113}{Content per-instance answer comparison ($\Delta \leq -75\%$) for the 8 most divergent items: same question, each model's answer and reasoning}{table.15}{}}
+\gdef \LT@xi {\LT@entry 
+    {3}{73.79268pt}\LT@entry 
+    {3}{361.65944pt}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {4.10}Content: $\Delta \geq 75\%$}{121}{subsection.4.10}\protected@file@percent }
+\@writefile{lot}{\contentsline {table}{\numberline {16}{Content per-instance answer comparison ($\Delta \geq 75\%$) for the 2 most divergent items: same question, each model's answer and reasoning.}}{121}{table.16}\protected@file@percent }
+\newlabel{tab:cmp_content_pos75}{{16}{121}{Content per-instance answer comparison ($\Delta \geq 75\%$) for the 2 most divergent items: same question, each model's answer and reasoning}{table.16}{}}
+\gdef \LT@xii {\LT@entry 
+    {3}{73.79268pt}\LT@entry 
+    {3}{361.65944pt}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {4.11}Pedagogical: $\Delta \leq -75\%$}{123}{subsection.4.11}\protected@file@percent }
+\@writefile{lot}{\contentsline {table}{\numberline {17}{Pedagogical per-instance answer comparison ($\Delta \leq -75\%$) for the 15 most divergent items: same question, each model's answer and reasoning.}}{123}{table.17}\protected@file@percent }
+\newlabel{tab:cmp_pedagogical_neg75}{{17}{123}{Pedagogical per-instance answer comparison ($\Delta \leq -75\%$) for the 15 most divergent items: same question, each model's answer and reasoning}{table.17}{}}
+\gdef \LT@xiii {\LT@entry 
+    {3}{73.79268pt}\LT@entry 
+    {3}{361.65944pt}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {4.12}Pedagogical: $\Delta \geq 75\%$}{139}{subsection.4.12}\protected@file@percent }
+\@writefile{lot}{\contentsline {table}{\numberline {18}{Pedagogical per-instance answer comparison ($\Delta \geq 75\%$) for the 5 most divergent items: same question, each model's answer and reasoning.}}{139}{table.18}\protected@file@percent }
+\newlabel{tab:cmp_pedagogical_pos75}{{18}{139}{Pedagogical per-instance answer comparison ($\Delta \geq 75\%$) for the 5 most divergent items: same question, each model's answer and reasoning}{table.18}{}}
+\gdef \LT@xiv {\LT@entry 
+    {3}{73.79268pt}\LT@entry 
+    {3}{361.65944pt}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {4.13}Attitude: $-75\% < \Delta \leq -50\%$}{145}{subsection.4.13}\protected@file@percent }
+\@writefile{lot}{\contentsline {table}{\numberline {19}{Attitude per-instance answer comparison ($-75\% < \Delta \leq -50\%$) for the 1 most divergent items: same question, each model's answer and reasoning.}}{145}{table.19}\protected@file@percent }
+\newlabel{tab:cmp_attitude_neg50}{{19}{145}{Attitude per-instance answer comparison ($-75\% < \Delta \leq -50\%$) for the 1 most divergent items: same question, each model's answer and reasoning}{table.19}{}}
+\gdef \LT@xv {\LT@entry 
+    {3}{73.79268pt}\LT@entry 
+    {3}{361.65944pt}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {4.14}Attitude: $-50\% < \Delta \leq -25\%$}{146}{subsection.4.14}\protected@file@percent }
+\@writefile{lot}{\contentsline {table}{\numberline {20}{Attitude per-instance answer comparison ($-50\% < \Delta \leq -25\%$) for the 1 most divergent items: same question, each model's answer and reasoning.}}{146}{table.20}\protected@file@percent }
+\newlabel{tab:cmp_attitude_neg25}{{20}{146}{Attitude per-instance answer comparison ($-50\% < \Delta \leq -25\%$) for the 1 most divergent items: same question, each model's answer and reasoning}{table.20}{}}
+\gdef \LT@xvi {\LT@entry 
+    {3}{73.79268pt}\LT@entry 
+    {3}{361.65944pt}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {4.15}Attitude: $-25\% < \Delta < 0$}{147}{subsection.4.15}\protected@file@percent }
+\@writefile{lot}{\contentsline {table}{\numberline {21}{Attitude per-instance answer comparison ($-25\% < \Delta < 0$) for the 4 most divergent items: same question, each model's answer and reasoning.}}{147}{table.21}\protected@file@percent }
+\newlabel{tab:cmp_attitude_neg0}{{21}{147}{Attitude per-instance answer comparison ($-25\% < \Delta < 0$) for the 4 most divergent items: same question, each model's answer and reasoning}{table.21}{}}
+\gdef \LT@xvii {\LT@entry 
+    {3}{73.79268pt}\LT@entry 
+    {3}{361.65944pt}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {4.16}Attitude: $0 < \Delta < 25\%$}{151}{subsection.4.16}\protected@file@percent }
+\@writefile{lot}{\contentsline {table}{\numberline {22}{Attitude per-instance answer comparison ($0 < \Delta < 25\%$) for the 1 most divergent items: same question, each model's answer and reasoning.}}{151}{table.22}\protected@file@percent }
+\newlabel{tab:cmp_attitude_pos0}{{22}{151}{Attitude per-instance answer comparison ($0 < \Delta < 25\%$) for the 1 most divergent items: same question, each model's answer and reasoning}{table.22}{}}
+\gdef \LT@xviii {\LT@entry 
+    {3}{73.79268pt}\LT@entry 
+    {3}{361.65944pt}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {4.17}Attitude: $50\% \leq \Delta < 75\%$}{152}{subsection.4.17}\protected@file@percent }
+\@writefile{lot}{\contentsline {table}{\numberline {23}{Attitude per-instance answer comparison ($50\% \leq \Delta < 75\%$) for the 1 most divergent items: same question, each model's answer and reasoning.}}{152}{table.23}\protected@file@percent }
+\newlabel{tab:cmp_attitude_pos50}{{23}{152}{Attitude per-instance answer comparison ($50\% \leq \Delta < 75\%$) for the 1 most divergent items: same question, each model's answer and reasoning}{table.23}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {5}Model settings}{153}{section.5}\protected@file@percent }
+\@writefile{lot}{\contentsline {table}{\numberline {24}{\ignorespaces Model settings used to produce the responses (secrets redacted).}}{153}{table.24}\protected@file@percent }
+\newlabel{tab:model_settings}{{24}{153}{Model settings used to produce the responses (secrets redacted)}{table.24}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {6}Numeric field distributions}{154}{section.6}\protected@file@percent }
+\@writefile{lof}{\contentsline {figure}{\numberline {1}{\ignorespaces Univariate distributions of the per-row numeric fields, conditioned on whether the answer was correct (histogram + KDE + rug).}}{154}{figure.1}\protected@file@percent }
+\newlabel{fig:numeric_univariate}{{1}{154}{Univariate distributions of the per-row numeric fields, conditioned on whether the answer was correct (histogram + KDE + rug)}{figure.1}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {2}{\ignorespaces Pairwise relationships between the numeric fields, coloured by correctness: scatter (lower triangle), per-group distribution (diagonal), Pearson $r$ (upper triangle).}}{155}{figure.2}\protected@file@percent }
+\newlabel{fig:numeric_multivariate}{{2}{155}{Pairwise relationships between the numeric fields, coloured by correctness: scatter (lower triangle), per-group distribution (diagonal), Pearson $r$ (upper triangle)}{figure.2}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {7}Errors by category}{155}{section.7}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {7.1}Skills}{155}{subsection.7.1}\protected@file@percent }
+\gdef \LT@xix {\LT@entry 
     {3}{57.65388pt}\LT@entry 
     {3}{375.88582pt}}
-\gdef \@abspage@last{31}
+\@writefile{lot}{\contentsline {table}{\numberline {25}{Skills failed questions (first 20 per model) (objective: wrong; subjective: score $<$ 50\%): gold/score vs.\ the model's prediction and reasoning.}}{156}{table.25}\protected@file@percent }
+\newlabel{tab:err_skills}{{25}{156}{Skills failed questions (first 20 per model) (objective: wrong; subjective: score $<$ 50\%): gold/score vs.\ the model's prediction and reasoning}{table.25}{}}
+\gdef \LT@xx {\LT@entry 
+    {3}{57.65388pt}\LT@entry 
+    {3}{375.88582pt}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {7.2}Content}{199}{subsection.7.2}\protected@file@percent }
+\@writefile{lot}{\contentsline {table}{\numberline {26}{Content failed questions (first 20 per model) (objective: wrong; subjective: score $<$ 50\%): gold/score vs.\ the model's prediction and reasoning.}}{199}{table.26}\protected@file@percent }
+\newlabel{tab:err_content}{{26}{199}{Content failed questions (first 20 per model) (objective: wrong; subjective: score $<$ 50\%): gold/score vs.\ the model's prediction and reasoning}{table.26}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {7.3}Pedagogical}{227}{subsection.7.3}\protected@file@percent }
+\@writefile{lot}{\contentsline {table}{\numberline {27}{Pedagogical failed questions (first 20 per model) (objective: wrong; subjective: score $<$ 50\%): gold/score vs.\ the model's prediction and reasoning.}}{227}{table.27}\protected@file@percent }
+\newlabel{tab:err_pedagogical}{{27}{227}{Pedagogical failed questions (first 20 per model) (objective: wrong; subjective: score $<$ 50\%): gold/score vs.\ the model's prediction and reasoning}{table.27}{}}
+\gdef \LT@xxi {\LT@entry 
+    {3}{57.65388pt}\LT@entry 
+    {3}{375.88582pt}}
+\gdef \LT@xxii {\LT@entry 
+    {3}{57.65388pt}\LT@entry 
+    {3}{375.88582pt}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {7.4}Attitude}{265}{subsection.7.4}\protected@file@percent }
+\@writefile{lot}{\contentsline {table}{\numberline {28}{Attitude failed questions (first 20 per model) (objective: wrong; subjective: score $<$ 50\%): gold/score vs.\ the model's prediction and reasoning.}}{265}{table.28}\protected@file@percent }
+\newlabel{tab:err_attitude}{{28}{265}{Attitude failed questions (first 20 per model) (objective: wrong; subjective: score $<$ 50\%): gold/score vs.\ the model's prediction and reasoning}{table.28}{}}
+\gdef \@abspage@last{272}

@@ -9,6 +9,7 @@ from typing import Any
 from typing import Dict
 from typing import Optional
 from typing import Sequence
+from typing import Union
 
 from llm_common.llm_infer.api_info.dataclass_ import ApiConfig
 from llm_common.llm_infer.instances import LLMInferInput
@@ -131,12 +132,12 @@ def call_openai(
         input_: Optional[LLMInferInput]=None,
         api_config: Optional[ApiConfig]=None,
         api_key: str=None, base_url: str=None, max_tokens: int=None,
-        model: str=None, prompt: str=None,
+        model: str=None, prompt: Union[str,list]=None,
         system_input: str=None, image_paths: Optional[Sequence[Any]]=None,
         image_data_urls: Optional[Sequence[str]]=None, timeout: float=None,
         do_print_one_response_per_line=None, disable_maxtoken_hint=None,
         model_settings: Optional[ModelSettings]=None,
-) -> LLMInferOutput:
+        disable_thinking=None,) -> LLMInferOutput:
     if input_ is None:
         if model_settings is None:
             model_settings = ModelSettings()
@@ -169,7 +170,7 @@ def call_openai(
         )
     ms = input_.model_settings
     body = {
-            "model"      : ms.model,
+            "model"      : ms.api. model,
             "thinking"   : ms.thinking,
             "temperature": ms.temperature,
             "stream"     : ms.stream,
@@ -177,28 +178,42 @@ def call_openai(
             # (choices=[], usage={...}) at the end of the stream.
             "stream_options": {"include_usage": True},
             "max_tokens" : ms.max_tokens,
-            "messages"   : [
+            "messages"   : (
+                    [
                     {"role": "system", "content": ms.system_input},
+            ] if ms.system_input else []
+                           ) + [
                     {"role": "user", "content": build_user_content(input_.prompt, input_.image_data_urls)},
+
             ],
+
     }
+    if disable_thinking:
+        # 实现
+        body["thinking"] = {"type": "disabled"}
+        body["chat_template_kwargs"] = {
+            **body.get("chat_template_kwargs", {}),
+            "enable_thinking": False,
+        }
+        body["enable_thinking"] = False
+        body.pop("reasoning_effort", None)
+
 
     print('*' * 50 + f'''\n{ms.system_input}\n^^^(ms.system_input)^^^\n''' + '''\nat:\nllm_common/llm_infer/call.py:242\n''' + '*' * 50)
     print('*' * 50 + f'''\n{input_.prompt}\n^^^(input_.prompt)^^^\n''' + '''\nat:\nllm_common/llm_infer/call.py:243\n''' + '*' * 50)
 
-    url = build_chat_completions_url(ms.base_url)
+    url = build_chat_completions_url(ms.api. base_url)
     request = urllib.request.Request(
             url,
             data=json.dumps(body, ensure_ascii=False).encode("utf-8"),
             headers={
-                    "Authorization": f"Bearer {ms.api_key}",
+                    "Authorization": f"Bearer {ms.api. api_key}",
                     "Content-Type" : "application/json",
             },
             method="POST",
     )
 
     print(f"POST {url}")
-    print(f"model={ms.model} stream=true")
 
     chunks: list[str] = []
     reasoning_chunks: list[str] = []
@@ -268,6 +283,7 @@ def call_openai(
         print("ERROR: stream completed but produced no text", file=sys.stderr)
         raise Exception('llm error')
     reasoning = "".join(reasoning_chunks).strip() or None
+    print()
     return LLMInferOutput(
         prompt=input_.prompt,
         image_data_urls=input_.image_data_urls,

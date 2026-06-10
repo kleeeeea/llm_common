@@ -9,6 +9,7 @@ from typing import Any
 from typing import Dict
 from typing import Optional
 from typing import Sequence
+from typing import Union
 
 from llm_common.llm_infer.api_info.dataclass_ import ApiConfig
 from llm_common.llm_infer.load_env import ENV_FILE
@@ -158,14 +159,17 @@ class ModelSettings:
         if not api_key and not is_local:
             print(f"ERROR: LLM_API_KEY is empty. Set it in {ENV_FILE} or export LLM_API_KEY.", file=sys.stderr)
             sys.exit(2)
-        max_tokens = self.max_tokens if self.max_tokens is not None else int(local_env.get("MAX_TOKENS", "12000"))
-        require_positive_number("max_tokens", max_tokens)
-        system_input = (self.system_input or local_env.get("SYSTEM_INPUT", "你是测试助手。回答必须按照字数要求。")).strip()
+        # max_tokens = self.max_tokens if self.max_tokens is not None else int(local_env.get("MAX_TOKENS", "12000"))
+        # require_positive_number("max_tokens", max_tokens)
+        # system_input = (self.system_input or local_env.get("SYSTEM_INPUT", "你是测试助手。回答必须按照字数要求。")).strip()
         # Idempotent: `replace()` (used in call_openai) re-runs __post_init__, so
         # only append the hint if it isn't already present.
         hint_marker = "Total token budget including reasoning is:"
-        if not self.disable_maxtoken_hint and hint_marker not in system_input:
-            system_input += f"\n{hint_marker} {max_tokens}. Reasoning budget can not be more than {int(max_tokens * 0.8)} tokens"
+        if self.max_tokens is not None and self.system_input is not None and (
+                not self.disable_maxtoken_hint and hint_marker not in self.system_input):
+            system_input=self.system_input
+            system_input += f"\n{hint_marker} {self.max_tokens}. Reasoning budget can not be more than {int(self.max_tokens * 0.8)} tokens"
+            object.__setattr__(self, "system_input", system_input)
 
         # Frozen dataclass — write resolved values back in place (no `replace`,
         # which would recurse through __post_init__).
@@ -173,8 +177,7 @@ class ModelSettings:
         object.__setattr__(self, "base_url", base_url)
         object.__setattr__(self, "model", model)
         object.__setattr__(self, "timeout", timeout)
-        object.__setattr__(self, "max_tokens", max_tokens)
-        object.__setattr__(self, "system_input", system_input)
+        # object.__setattr__(self, "max_tokens", max_tokens)
 
 
 def image_path_to_data_url(image_path: Any) -> str:
@@ -194,7 +197,8 @@ def image_path_to_data_url(image_path: Any) -> str:
 
 @dataclass(frozen=True)
 class LLMInferInput(object):
-    prompt: str
+    # allow list
+    prompt: Union[str, list]
     image_paths: Optional[Sequence[Any]] = None
     image_data_urls: Optional[Sequence[str]] = None
     model_settings: Optional[ModelSettings] = None
@@ -216,8 +220,8 @@ class LLMInferInput(object):
         object.__setattr__(self, "model_settings", ms)
         if not self.prompt:
             raise ValueError("prompt is empty")
-        if not ms.system_input:
-            raise ValueError("system_input is empty")
+        # if not ms.system_input:
+        #     raise ValueError("system_input is empty")
         # Auto-populate id from extra when not provided explicitly.
         if not self.id and self.extra:
             object.__setattr__(self, "id", str(self.extra.get("id", "")))

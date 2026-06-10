@@ -1,6 +1,7 @@
 import os
 from dataclasses import dataclass
 from typing import Dict
+from typing import Optional
 
 from llm_common.llm_infer.load_env import ENV_FILE, load_env_file
 
@@ -13,6 +14,7 @@ class ApiConfig:
     base_url: str
     api_key: str
     model: str
+    model_alias: Optional[str] = None
 
     @classmethod
     def from_env(
@@ -31,6 +33,8 @@ class ApiConfig:
             base_url=env_or_default(url_env, defaults.base_url),
             api_key=env_or_default(key_env, defaults.api_key),
             model=env_or_default(model_env, defaults.model),
+            # keep the display alias from defaults (env only overrides the real model).
+            model_alias=defaults.model_alias,
         )
 
 # @dataclass
@@ -109,6 +113,7 @@ DEFAULT_1T_INNOSPARK_API = ApiConfig.from_env(
         base_url="https://jhbb98d5pbdhcokomo8qqmjojdk5bcej.openapi-qb.sii.edu.cn/v1",
         api_key=SII_API_KEY,
         model="kimi",
+        model_alias='Innospark-1T',
     ),
     url_env="DEFAULT_1T_INNOSPARK_BASE_URL",
     key_env="DEFAULT_1T_INNOSPARK_API_KEY",
@@ -178,6 +183,18 @@ def apiconfig_for_model(model: str) -> ApiConfig:
             f"no ApiConfig registered for model {model!r}; "
             f"known models: {sorted(MODEL_TO_APICONFIG)}"
         )
+
+
+def model_alias_for(model: str) -> str:
+    """Display name for `model`: its registered ``model_alias`` if any, else `model`.
+
+    Safe for arbitrary / unregistered model strings (returns them unchanged), so
+    report code can call it on every model name without guarding.
+    """
+    cfg = MODEL_TO_APICONFIG.get(model)
+    if cfg is not None and cfg.model_alias:
+        return cfg.model_alias
+    return model
 
 
 def main():

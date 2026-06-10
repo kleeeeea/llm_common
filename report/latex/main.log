@@ -1,4 +1,4 @@
-This is pdfTeX, Version 3.141592653-2.6-1.40.29 (TeX Live 2026) (preloaded format=pdflatex 2026.3.24)  4 JUN 2026 14:53
+This is pdfTeX, Version 3.141592653-2.6-1.40.29 (TeX Live 2026) (preloaded format=pdflatex 2026.3.24)  4 JUN 2026 18:45
 entering extended mode
  restricted \write18 enabled.
  %&-line parsing enabled.
@@ -421,115 +421,801 @@ LaTeX Font Info:    External font `cmex10' loaded for size
 (./tables/tab:cat_attitude.tex) [1
 
 {/usr/local/texlive/2026/texmf-var/fonts/map/pdftex/updmap/pdftex.map}] (./tabl
-es/tab:model_settings.tex)
-<figures/numeric_univariate.pdf, id=23, 494.48196pt x 377.43448pt>
-File: figures/numeric_univariate.pdf Graphic file (type pdf)
-<use figures/numeric_univariate.pdf>
-Package pdftex.def Info: figures/numeric_univariate.pdf  used on input line 37.
+es/tab:disagreement.tex
+ignored: Infinite glue shrinkage found in box being split [2]
+ignored: Infi
+nite glue shrinkage found in box being split [3])
 
-(pdftex.def)             Requested size: 472.03123pt x 360.30574pt.
-<figures/numeric_multivariate.pdf, id=24, 491.22147pt x 506.24007pt>
-File: figures/numeric_multivariate.pdf Graphic file (type pdf)
-<use figures/numeric_multivariate.pdf>
-Package pdftex.def Info: figures/numeric_multivariate.pdf  used on input line 4
-4.
-(pdftex.def)             Requested size: 472.03123pt x 486.46387pt.
- [2 <./figures/numeric_univariate.pdf>] (./tables/tab:praxis_errors.tex
-LaTeX Font Info:    Trying to load font information for OMS+cmr on input line 1
-21.
+Package hyperref Warning: Token not allowed in a PDF string (Unicode):
+(hyperref)                removing `math shift' on input line 41.
 
-(/usr/local/texlive/2026/texmf-dist/tex/latex/base/omscmr.fd
-File: omscmr.fd 2024/11/19 v2.5n Standard LaTeX font definitions
-)
-LaTeX Font Info:    Font shape `OMS/cmr/m/n' in size <10> not available
-(Font)              Font shape `OMS/cmsy/m/n' tried instead on input line 121.
-LaTeX Font Info:    Trying to load font information for OML+cmr on input line 2
-01.
+
+Package hyperref Warning: Token not allowed in a PDF string (Unicode):
+(hyperref)                removing `\Delta' on input line 41.
+
+
+Package hyperref Warning: Token not allowed in a PDF string (Unicode):
+(hyperref)                removing `\leq' on input line 41.
+
+
+Package hyperref Warning: Token not allowed in a PDF string (Unicode):
+(hyperref)                removing `math shift' on input line 41.
+
+(./tables/tab:cmp_skills_neg75.tex
+ignored: Infinite glue shrinkage found in box being sp
+lit [4]
+ignored: Infinite glue shrinkage found in box being split [5])
+
+Package hyperref Warning: Token not allowed in a PDF string (Unicode):
+(hyperref)                removing `math shift' on input line 45.
+
+
+Package hyperref Warning: Token not allowed in a PDF string (Unicode):
+(hyperref)                removing `\Delta' on input line 45.
+
+
+Package hyperref Warning: Token not allowed in a PDF string (Unicode):
+(hyperref)                removing `\leq' on input line 45.
+
+
+Package hyperref Warning: Token not allowed in a PDF string (Unicode):
+(hyperref)                removing `math shift' on input line 45.
+
+(./tables/tab:cmp_skills_neg50.tex
+LaTeX Font Info:    Trying to load font information for OML+cmr on input line 1
+7.
 
 (/usr/local/texlive/2026/texmf-dist/tex/latex/base/omlcmr.fd
 File: omlcmr.fd 2024/11/19 v2.5n Standard LaTeX font definitions
 )
 LaTeX Font Info:    Font shape `OML/cmr/m/n' in size <10> not available
-(Font)              Font shape `OML/cmm/m/it' tried instead on input line 201.
+(Font)              Font shape `OML/cmm/m/it' tried instead on input line 17.
 
-ignored: Infinite glue shrinkage found in box being split [3 <./figures/numeric_multivar
-iate.pdf>]
-ignored: Infinite glue shrinkage found in box being split [4]
-ignored: Infinite glue shr
-inkage found in box being split [5]
-ignored: Infinite glue shrinkage found in box being s
-plit [6]
-ignored: Infinite glue shrinkage found in box being split [7]
-ignored: Infinite glue shrin
-kage found in box being split [8]
-ignored: Infinite glue shrinkage found in box being spl
-it [9]
-ignored: Infinite glue shrinkage found in box being split [10]
-ignored: Infinite glue shrink
-age found in box being split [11]
-ignored: Infinite glue shrinkage found in box being spl
-it [12]
-ignored: Infinite glue shrinkage found in box being split [13{/usr/local/texlive/
-2026/texmf-dist/fonts/enc/dvips/cm-super/cm-super-ts1.enc}]
-ignored: Infinite glue shrink
-age found in box being split [14]
-ignored: Infinite glue shrinkage found in box being spl
-it
-[15]
-ignored: Infinite glue shrinkage found in box being split [16]
-ignored: Infinite glue shrinkag
-e found in box being split [17]
+ignored: Infinite glue shrinkage found in box being split [6]
+ignored: Infinite glue shrinkage fou
+nd in box being split [7]
+ignored: Infinite glue shrinkage found in box being split [8])
+
+Package hyperref Warning: Token not allowed in a PDF string (Unicode):
+(hyperref)                removing `math shift' on input line 49.
+
+
+Package hyperref Warning: Token not allowed in a PDF string (Unicode):
+(hyperref)                removing `\Delta' on input line 49.
+
+
+Package hyperref Warning: Token not allowed in a PDF string (Unicode):
+(hyperref)                removing `\leq' on input line 49.
+
+
+Package hyperref Warning: Token not allowed in a PDF string (Unicode):
+(hyperref)                removing `math shift' on input line 49.
+
+(./tables/tab:cmp_skills_neg25.tex [9]
+ignored: Infinite glue shrinkage found in box bein
+g split [10]
+ignored: Infinite glue shrinkage found in box being split [11]
+ignored: Infinite glue 
+shrinkage found in box being split [12]
+ignored: Infinite glue shrinkage found in box bei
+ng split [13]
+ignored: Infinite glue shrinkage found in box being split [14]
+ignored: Infinite glue
+ shrinkage found in box being split [15]
+ignored: Infinite glue shrinkage found in box be
+ing split [16]
 ignored: Infinite glue shrinkage found in box being split
- [18]
-ignored: Infinite glue shrinkage found in box being split [19]
+[17]
+ignored: Infinite glue shrinkage found in box being split [18]
+ignored: Infinite glue shrinkag
+e found in box being split [19]
+ignored: Infinite glue shrinkage found in box being split
+ [20]
+ignored: Infinite glue shrinkage found in box being split [21]
 ignored: Infinite glue shrinka
-ge found in box being split [20]
+ge found in box being split [22]
 ignored: Infinite glue shrinkage found in box being spli
-t [21]
-ignored: Infinite glue shrinkage found in box being split [22]
+t [23])
+
+Package hyperref Warning: Token not allowed in a PDF string (Unicode):
+(hyperref)                removing `math shift' on input line 53.
+
+
+Package hyperref Warning: Token not allowed in a PDF string (Unicode):
+(hyperref)                removing `\Delta' on input line 53.
+
+
+Package hyperref Warning: Token not allowed in a PDF string (Unicode):
+(hyperref)                removing `math shift' on input line 53.
+
+(./tables/tab:cmp_skills_neg0.tex [24]
+ignored: Infinite glue shrinkage found in box bein
+g split [25]
+ignored: Infinite glue shrinkage found in box being split [26]
+ignored: Infinite glue 
+shrinkage found in box being split [27]
+ignored: Infinite glue shrinkage found in box bei
+ng split [28]
+ignored: Infinite glue shrinkage found in box being split [29]
+ignored: Infinite glue
+ shrinkage found in box being split [30]
+ignored: Infinite glue shrinkage found in box be
+ing split [31]
+ignored: Infinite glue shrinkage found in box being split
+[32]
+ignored: Infinite glue shrinkage found in box being split [33]
+ignored: Infinite glue shrinkag
+e found in box being split [34]
+ignored: Infinite glue shrinkage found in box being split
+ [35]
+ignored: Infinite glue shrinkage found in box being split [36]
+ignored: Infinite glue shrinka
+ge found in box being split [37]
+ignored: Infinite glue shrinkage found in box being spli
+t [38]
+ignored: Infinite glue shrinkage found in box being split [39]
 ignored: Infinite glue shrink
-age found in box being split [23]
+age found in box being split [40]
 ignored: Infinite glue shrinkage found in box being spl
-it [24]
-ignored: Infinite glue shrinkage found in box being split [25]
+it [41]
+ignored: Infinite glue shrinkage found in box being split [42]
 ignored: Infinite glue shrin
-kage found in box being split [26]
+kage found in box being split [43]
 ignored: Infinite glue shrinkage found in box being sp
-lit [27]
-ignored: Infinite glue shrinkage found in box being split [28]
+lit [44]
+ignored: Infinite glue shrinkage found in box being split [45]
 ignored: Infinite glue shri
-nkage found in box being split [29]
+nkage found in box being split [46]
 ignored: Infinite glue shrinkage found in box being s
 plit
-[30]) [31] (./main.aux)
+[47]
+ignored: Infinite glue shrinkage found in box being split [48]
+ignored: Infinite glue shrinkag
+e found in box being split [49]
+ignored: Infinite glue shrinkage found in box being split
+ [50{/usr/local/texlive/2026/texmf-dist/fonts/enc/dvips/cm-super/cm-super-ts1.e
+nc}]
+ignored: Infinite glue shrinkage found in box being split [51]
+ignored: Infinite glue shrinkag
+e found in box being split [52]
+ignored: Infinite glue shrinkage found in box being split
+ [53])
+
+Package hyperref Warning: Token not allowed in a PDF string (Unicode):
+(hyperref)                removing `math shift' on input line 57.
+
+
+Package hyperref Warning: Token not allowed in a PDF string (Unicode):
+(hyperref)                removing `\Delta' on input line 57.
+
+
+Package hyperref Warning: Token not allowed in a PDF string (Unicode):
+(hyperref)                removing `math shift' on input line 57.
+
+(./tables/tab:cmp_skills_pos0.tex
+ignored: Infinite glue shrinkage found in box being spl
+it [54]
+ignored: Infinite glue shrinkage found in box being split [55]
+ignored: Infinite glue shrin
+kage found in box being split [56]
+ignored: Infinite glue shrinkage found in box being sp
+lit [57]
+ignored: Infinite glue shrinkage found in box being split [58]
+ignored: Infinite glue shri
+nkage found in box being split [59]
+ignored: Infinite glue shrinkage found in box being s
+plit [60]
+ignored: Infinite glue shrinkage found in box being split [61]
+ignored: Infinite glue shr
+inkage found in box being split
+[62]
+ignored: Infinite glue shrinkage found in box being split [63]
+ignored: Infinite glue shrinkag
+e found in box being split [64]
+ignored: Infinite glue shrinkage found in box being split
+ [65]
+ignored: Infinite glue shrinkage found in box being split [66]
+ignored: Infinite glue shrinka
+ge found in box being split [67]
+ignored: Infinite glue shrinkage found in box being spli
+t [68]
+ignored: Infinite glue shrinkage found in box being split [69]
+ignored: Infinite glue shrink
+age found in box being split [70]
+ignored: Infinite glue shrinkage found in box being spl
+it [71]
+ignored: Infinite glue shrinkage found in box being split [72]
+ignored: Infinite glue shrin
+kage found in box being split [73]
+ignored: Infinite glue shrinkage found in box being sp
+lit [74]
+ignored: Infinite glue shrinkage found in box being split [75]
+ignored: Infinite glue shri
+nkage found in box being split [76]
+ignored: Infinite glue shrinkage found in box being s
+plit
+[77]
+ignored: Infinite glue shrinkage found in box being split [78]
+ignored: Infinite glue shrinkag
+e found in box being split [79])
+
+Package hyperref Warning: Token not allowed in a PDF string (Unicode):
+(hyperref)                removing `math shift' on input line 61.
+
+
+Package hyperref Warning: Token not allowed in a PDF string (Unicode):
+(hyperref)                removing `\leq' on input line 61.
+
+
+Package hyperref Warning: Token not allowed in a PDF string (Unicode):
+(hyperref)                removing `\Delta' on input line 61.
+
+
+Package hyperref Warning: Token not allowed in a PDF string (Unicode):
+(hyperref)                removing `math shift' on input line 61.
+
+(./tables/tab:cmp_skills_pos25.tex
+ignored: Infinite glue shrinkage found in box being sp
+lit [80]
+ignored: Infinite glue shrinkage found in box being split [81]
+ignored: Infinite glue shri
+nkage found in box being split [82]
+ignored: Infinite glue shrinkage found in box being s
+plit [83]
+ignored: Infinite glue shrinkage found in box being split [84]
+ignored: Infinite glue shr
+inkage found in box being split [85]
+ignored: Infinite glue shrinkage found in box being 
+split [86]
+ignored: Infinite glue shrinkage found in box being split [87]
+ignored: Infinite glue sh
+rinkage found in box being split
+[88]
+ignored: Infinite glue shrinkage found in box being split [89]
+ignored: Infinite glue shrinkag
+e found in box being split [90]
+ignored: Infinite glue shrinkage found in box being split
+ [91]
+ignored: Infinite glue shrinkage found in box being split [92]
+ignored: Infinite glue shrinka
+ge found in box being split [93])
+
+Package hyperref Warning: Token not allowed in a PDF string (Unicode):
+(hyperref)                removing `math shift' on input line 65.
+
+
+Package hyperref Warning: Token not allowed in a PDF string (Unicode):
+(hyperref)                removing `\leq' on input line 65.
+
+
+Package hyperref Warning: Token not allowed in a PDF string (Unicode):
+(hyperref)                removing `\Delta' on input line 65.
+
+
+Package hyperref Warning: Token not allowed in a PDF string (Unicode):
+(hyperref)                removing `math shift' on input line 65.
+
+(./tables/tab:cmp_skills_pos50.tex
+LaTeX Font Info:    Trying to load font information for OMS+cmr on input line 6
+8.
+
+(/usr/local/texlive/2026/texmf-dist/tex/latex/base/omscmr.fd
+File: omscmr.fd 2024/11/19 v2.5n Standard LaTeX font definitions
+)
+LaTeX Font Info:    Font shape `OMS/cmr/m/n' in size <10> not available
+(Font)              Font shape `OMS/cmsy/m/n' tried instead on input line 68.
+
+ignored: Infinite glue shrinkage found in box being split [94]
+ignored: Infinite glue shrinkage fo
+und in box being split [95]
+ignored: Infinite glue shrinkage found in box being split
+[96]
+ignored: Infinite glue shrinkage found in box being split [97]
+ignored: Infinite glue shrinkag
+e found in box being split [98]
+ignored: Infinite glue shrinkage found in box being split
+ [99]
+ignored: Infinite glue shrinkage found in box being split [100]
+ignored: Infinite glue shrink
+age found in box being split [101]
+ignored: Infinite glue shrinkage found in box being sp
+lit [102]
+ignored: Infinite glue shrinkage found in box being split [103]
+ignored: Infinite glue sh
+rinkage found in box being split [104]
+ignored: Infinite glue shrinkage found in box bein
+g split [105]
+ignored: Infinite glue shrinkage found in box being split [106]
+ignored: Infinite glu
+e shrinkage found in box being split [107]
+ignored: Infinite glue shrinkage found in box 
+being split [108]
+ignored: Infinite glue shrinkage found in box being split
+[109])
+
+Package hyperref Warning: Token not allowed in a PDF string (Unicode):
+(hyperref)                removing `math shift' on input line 69.
+
+
+Package hyperref Warning: Token not allowed in a PDF string (Unicode):
+(hyperref)                removing `\Delta' on input line 69.
+
+
+Package hyperref Warning: Token not allowed in a PDF string (Unicode):
+(hyperref)                removing `\geq' on input line 69.
+
+
+Package hyperref Warning: Token not allowed in a PDF string (Unicode):
+(hyperref)                removing `math shift' on input line 69.
+
+(./tables/tab:cmp_skills_pos75.tex [110]
+ignored: Infinite glue shrinkage found in box be
+ing split [111]
+ignored: Infinite glue shrinkage found in box being split [112])
+
+Package hyperref Warning: Token not allowed in a PDF string (Unicode):
+(hyperref)                removing `math shift' on input line 73.
+
+
+Package hyperref Warning: Token not allowed in a PDF string (Unicode):
+(hyperref)                removing `\Delta' on input line 73.
+
+
+Package hyperref Warning: Token not allowed in a PDF string (Unicode):
+(hyperref)                removing `\leq' on input line 73.
+
+
+Package hyperref Warning: Token not allowed in a PDF string (Unicode):
+(hyperref)                removing `math shift' on input line 73.
+
+(./tables/tab:cmp_content_neg75.tex
+ignored: Infinite glue shrinkage found in box being s
+plit [113]
+ignored: Infinite glue shrinkage found in box being split [114]
+ignored: Infinite glue s
+hrinkage found in box being split [115]
+ignored: Infinite glue shrinkage found in box bei
+ng split [116]
+ignored: Infinite glue shrinkage found in box being split [117]
+ignored: Infinite gl
+ue shrinkage found in box being split [118]
+ignored: Infinite glue shrinkage found in box
+ being split
+[119]
+ignored: Infinite glue shrinkage found in box being split [120])
+
+Package hyperref Warning: Token not allowed in a PDF string (Unicode):
+(hyperref)                removing `math shift' on input line 77.
+
+
+Package hyperref Warning: Token not allowed in a PDF string (Unicode):
+(hyperref)                removing `\Delta' on input line 77.
+
+
+Package hyperref Warning: Token not allowed in a PDF string (Unicode):
+(hyperref)                removing `\geq' on input line 77.
+
+
+Package hyperref Warning: Token not allowed in a PDF string (Unicode):
+(hyperref)                removing `math shift' on input line 77.
+
+(./tables/tab:cmp_content_pos75.tex
+ignored: Infinite glue shrinkage found in box being s
+plit [121]
+ignored: Infinite glue shrinkage found in box being split [122])
+
+Package hyperref Warning: Token not allowed in a PDF string (Unicode):
+(hyperref)                removing `math shift' on input line 81.
+
+
+Package hyperref Warning: Token not allowed in a PDF string (Unicode):
+(hyperref)                removing `\Delta' on input line 81.
+
+
+Package hyperref Warning: Token not allowed in a PDF string (Unicode):
+(hyperref)                removing `\leq' on input line 81.
+
+
+Package hyperref Warning: Token not allowed in a PDF string (Unicode):
+(hyperref)                removing `math shift' on input line 81.
+
+(./tables/tab:cmp_pedagogical_neg75.tex
+ignored: Infinite glue shrinkage found in box bei
+ng split [123]
+ignored: Infinite glue shrinkage found in box being split [124]
+ignored: Infinite gl
+ue shrinkage found in box being split [125]
+ignored: Infinite glue shrinkage found in box
+ being split [126]
+ignored: Infinite glue shrinkage found in box being split [127]
+ignored: Infinit
+e glue shrinkage found in box being split [128]
+ignored: Infinite glue shrinkage found in
+ box being split
+[129]
+ignored: Infinite glue shrinkage found in box being split [130]
+ignored: Infinite glue shrink
+age found in box being split [131]
+ignored: Infinite glue shrinkage found in box being sp
+lit [132]
+ignored: Infinite glue shrinkage found in box being split [133]
+ignored: Infinite glue sh
+rinkage found in box being split [134]
+ignored: Infinite glue shrinkage found in box bein
+g split [135]
+ignored: Infinite glue shrinkage found in box being split [136]
+ignored: Infinite glu
+e shrinkage found in box being split [137]
+ignored: Infinite glue shrinkage found in box 
+being split [138])
+
+Package hyperref Warning: Token not allowed in a PDF string (Unicode):
+(hyperref)                removing `math shift' on input line 85.
+
+
+Package hyperref Warning: Token not allowed in a PDF string (Unicode):
+(hyperref)                removing `\Delta' on input line 85.
+
+
+Package hyperref Warning: Token not allowed in a PDF string (Unicode):
+(hyperref)                removing `\geq' on input line 85.
+
+
+Package hyperref Warning: Token not allowed in a PDF string (Unicode):
+(hyperref)                removing `math shift' on input line 85.
+
+(./tables/tab:cmp_pedagogical_pos75.tex
+ignored: Infinite glue shrinkage found in box bei
+ng split [139]
+ignored: Infinite glue shrinkage found in box being split [140]
+ignored: Infinite gl
+ue shrinkage found in box being split [141]
+ignored: Infinite glue shrinkage found in box
+ being split [142]
+ignored: Infinite glue shrinkage found in box being split [143]
+ignored: Infinit
+e glue shrinkage found in box being split [144])
+
+Package hyperref Warning: Token not allowed in a PDF string (Unicode):
+(hyperref)                removing `math shift' on input line 89.
+
+
+Package hyperref Warning: Token not allowed in a PDF string (Unicode):
+(hyperref)                removing `\Delta' on input line 89.
+
+
+Package hyperref Warning: Token not allowed in a PDF string (Unicode):
+(hyperref)                removing `\leq' on input line 89.
+
+
+Package hyperref Warning: Token not allowed in a PDF string (Unicode):
+(hyperref)                removing `math shift' on input line 89.
+
+(./tables/tab:cmp_attitude_neg50.tex
+ignored: Infinite glue shrinkage found in box being 
+split [145])
+
+Package hyperref Warning: Token not allowed in a PDF string (Unicode):
+(hyperref)                removing `math shift' on input line 93.
+
+
+Package hyperref Warning: Token not allowed in a PDF string (Unicode):
+(hyperref)                removing `\Delta' on input line 93.
+
+
+Package hyperref Warning: Token not allowed in a PDF string (Unicode):
+(hyperref)                removing `\leq' on input line 93.
+
+
+Package hyperref Warning: Token not allowed in a PDF string (Unicode):
+(hyperref)                removing `math shift' on input line 93.
+
+(./tables/tab:cmp_attitude_neg25.tex
+ignored: Infinite glue shrinkage found in box being 
+split [146])
+
+Package hyperref Warning: Token not allowed in a PDF string (Unicode):
+(hyperref)                removing `math shift' on input line 97.
+
+
+Package hyperref Warning: Token not allowed in a PDF string (Unicode):
+(hyperref)                removing `\Delta' on input line 97.
+
+
+Package hyperref Warning: Token not allowed in a PDF string (Unicode):
+(hyperref)                removing `math shift' on input line 97.
+
+(./tables/tab:cmp_attitude_neg0.tex
+ignored: Infinite glue shrinkage found in box being s
+plit [147]
+ignored: Infinite glue shrinkage found in box being split [148]
+ignored: Infinite glue s
+hrinkage found in box being split [149]
+ignored: Infinite glue shrinkage found in box bei
+ng split [150])
+
+Package hyperref Warning: Token not allowed in a PDF string (Unicode):
+(hyperref)                removing `math shift' on input line 101.
+
+
+Package hyperref Warning: Token not allowed in a PDF string (Unicode):
+(hyperref)                removing `\Delta' on input line 101.
+
+
+Package hyperref Warning: Token not allowed in a PDF string (Unicode):
+(hyperref)                removing `math shift' on input line 101.
+
+(./tables/tab:cmp_attitude_pos0.tex
+ignored: Infinite glue shrinkage found in box being s
+plit [151])
+
+Package hyperref Warning: Token not allowed in a PDF string (Unicode):
+(hyperref)                removing `math shift' on input line 105.
+
+
+Package hyperref Warning: Token not allowed in a PDF string (Unicode):
+(hyperref)                removing `\leq' on input line 105.
+
+
+Package hyperref Warning: Token not allowed in a PDF string (Unicode):
+(hyperref)                removing `\Delta' on input line 105.
+
+
+Package hyperref Warning: Token not allowed in a PDF string (Unicode):
+(hyperref)                removing `math shift' on input line 105.
+
+(./tables/tab:cmp_attitude_pos50.tex
+ignored: Infinite glue shrinkage found in box being 
+split [152]) (./tables/tab:model_settings.tex)
+<figures/numeric_univariate.pdf, id=788, 494.48196pt x 377.43448pt>
+File: figures/numeric_univariate.pdf Graphic file (type pdf)
+<use figures/numeric_univariate.pdf>
+Package pdftex.def Info: figures/numeric_univariate.pdf  used on input line 117
+.
+(pdftex.def)             Requested size: 472.03123pt x 360.30574pt.
+
+[153]
+<figures/numeric_multivariate.pdf, id=794, 491.22147pt x 506.24007pt>
+File: figures/numeric_multivariate.pdf Graphic file (type pdf)
+<use figures/numeric_multivariate.pdf>
+Package pdftex.def Info: figures/numeric_multivariate.pdf  used on input line 1
+24.
+(pdftex.def)             Requested size: 472.03123pt x 486.46387pt.
+ [154 <./figures/numeric_univariate.pdf>] (./tables/tab:err_skills.tex
+[155 <./figures/numeric_multivariate.pdf>]
+ignored: Infinite glue shrinkage found in box 
+being split [156]
+ignored: Infinite glue shrinkage found in box being split [157]
+ignored: Infinite
+ glue shrinkage found in box being split [158]
+ignored: Infinite glue shrinkage found in 
+box being split [159]
+ignored: Infinite glue shrinkage found in box being split [160]
+ignored: Infi
+nite glue shrinkage found in box being split
+[161]
+ignored: Infinite glue shrinkage found in box being split [162]
+ignored: Infinite glue shrink
+age found in box being split [163]
+ignored: Infinite glue shrinkage found in box being sp
+lit [164]
+ignored: Infinite glue shrinkage found in box being split [165]
+ignored: Infinite glue sh
+rinkage found in box being split [166]
+ignored: Infinite glue shrinkage found in box bein
+g split [167]
+ignored: Infinite glue shrinkage found in box being split [168]
+ignored: Infinite glu
+e shrinkage found in box being split [169]
+ignored: Infinite glue shrinkage found in box 
+being split [170]
+ignored: Infinite glue shrinkage found in box being split [171]
+ignored: Infinite
+ glue shrinkage found in box being split [172]
+ignored: Infinite glue shrinkage found in 
+box being split
+[173]
+ignored: Infinite glue shrinkage found in box being split [174]
+ignored: Infinite glue shrink
+age found in box being split [175]
+ignored: Infinite glue shrinkage found in box being sp
+lit [176]
+ignored: Infinite glue shrinkage found in box being split [177]
+ignored: Infinite glue sh
+rinkage found in box being split [178]
+ignored: Infinite glue shrinkage found in box bein
+g split [179]
+ignored: Infinite glue shrinkage found in box being split [180]
+ignored: Infinite glu
+e shrinkage found in box being split [181]
+ignored: Infinite glue shrinkage found in box 
+being split [182]
+ignored: Infinite glue shrinkage found in box being split [183]
+ignored: Infinite
+ glue shrinkage found in box being split [184]
+ignored: Infinite glue shrinkage found in 
+box being split
+[185]
+ignored: Infinite glue shrinkage found in box being split [186]
+ignored: Infinite glue shrink
+age found in box being split [187]
+ignored: Infinite glue shrinkage found in box being sp
+lit [188]
+ignored: Infinite glue shrinkage found in box being split [189]
+ignored: Infinite glue sh
+rinkage found in box being split [190]
+ignored: Infinite glue shrinkage found in box bein
+g split [191]
+ignored: Infinite glue shrinkage found in box being split [192]
+ignored: Infinite glu
+e shrinkage found in box being split [193]
+ignored: Infinite glue shrinkage found in box 
+being split [194]
+ignored: Infinite glue shrinkage found in box being split [195]
+ignored: Infinite
+ glue shrinkage found in box being split [196]
+ignored: Infinite glue shrinkage found in 
+box being split
+[197]
+ignored: Infinite glue shrinkage found in box being split [198]) (./tables/tab:err_
+content.tex
+ignored: Infinite glue shrinkage found in box being split [199]
+ignored: Infinite glue 
+shrinkage found in box being split [200]
+ignored: Infinite glue shrinkage found in box be
+ing split [201]
+ignored: Infinite glue shrinkage found in box being split [202]
+ignored: Infinite g
+lue shrinkage found in box being split [203]
+ignored: Infinite glue shrinkage found in bo
+x being split
+[204]
+ignored: Infinite glue shrinkage found in box being split [205]
+ignored: Infinite glue shrink
+age found in box being split [206]
+ignored: Infinite glue shrinkage found in box being sp
+lit [207]
+ignored: Infinite glue shrinkage found in box being split [208]
+ignored: Infinite glue sh
+rinkage found in box being split [209]
+ignored: Infinite glue shrinkage found in box bein
+g split [210]
+ignored: Infinite glue shrinkage found in box being split [211]
+ignored: Infinite glu
+e shrinkage found in box being split [212]
+ignored: Infinite glue shrinkage found in box 
+being split [213]
+ignored: Infinite glue shrinkage found in box being split [214]
+ignored: Infinite
+ glue shrinkage found in box being split [215]
+ignored: Infinite glue shrinkage found in 
+box being split
+[216]
+ignored: Infinite glue shrinkage found in box being split [217]
+ignored: Infinite glue shrink
+age found in box being split [218]
+ignored: Infinite glue shrinkage found in box being sp
+lit [219]
+ignored: Infinite glue shrinkage found in box being split [220]
+ignored: Infinite glue sh
+rinkage found in box being split [221]
+ignored: Infinite glue shrinkage found in box bein
+g split [222]
+ignored: Infinite glue shrinkage found in box being split [223]
+ignored: Infinite glu
+e shrinkage found in box being split [224]
+ignored: Infinite glue shrinkage found in box 
+being split [225]
+ignored: Infinite glue shrinkage found in box being split [226])
+(./tables/tab:err_pedagogical.tex
+ignored: Infinite glue shrinkage found in box being spl
+it [227]
+ignored: Infinite glue shrinkage found in box being split [228]
+ignored: Infinite glue shr
+inkage found in box being split [229]
+ignored: Infinite glue shrinkage found in box being
+ split [230]
+ignored: Infinite glue shrinkage found in box being split [231]
+ignored: Infinite glue
+ shrinkage found in box being split [232]
+ignored: Infinite glue shrinkage found in box b
+eing split [233]
+ignored: Infinite glue shrinkage found in box being split
+[234]
+ignored: Infinite glue shrinkage found in box being split [235]
+ignored: Infinite glue shrink
+age found in box being split [236]
+ignored: Infinite glue shrinkage found in box being sp
+lit [237]
+ignored: Infinite glue shrinkage found in box being split [238]
+ignored: Infinite glue sh
+rinkage found in box being split [239]
+ignored: Infinite glue shrinkage found in box bein
+g split [240]
+ignored: Infinite glue shrinkage found in box being split [241]
+ignored: Infinite glu
+e shrinkage found in box being split [242]
+ignored: Infinite glue shrinkage found in box 
+being split [243]
+ignored: Infinite glue shrinkage found in box being split [244]
+ignored: Infinite
+ glue shrinkage found in box being split [245]
+ignored: Infinite glue shrinkage found in 
+box being split
+[246]
+ignored: Infinite glue shrinkage found in box being split [247]
+ignored: Infinite glue shrink
+age found in box being split [248]
+ignored: Infinite glue shrinkage found in box being sp
+lit [249]
+ignored: Infinite glue shrinkage found in box being split [250]
+ignored: Infinite glue sh
+rinkage found in box being split [251]
+ignored: Infinite glue shrinkage found in box bein
+g split [252]
+ignored: Infinite glue shrinkage found in box being split [253]
+ignored: Infinite glu
+e shrinkage found in box being split [254]
+ignored: Infinite glue shrinkage found in box 
+being split [255]
+ignored: Infinite glue shrinkage found in box being split [256]
+ignored: Infinite
+ glue shrinkage found in box being split [257]
+ignored: Infinite glue shrinkage found in 
+box being split
+[258]
+ignored: Infinite glue shrinkage found in box being split [259]
+ignored: Infinite glue shrink
+age found in box being split [260]
+ignored: Infinite glue shrinkage found in box being sp
+lit [261]
+ignored: Infinite glue shrinkage found in box being split [262]
+ignored: Infinite glue sh
+rinkage found in box being split [263]
+ignored: Infinite glue shrinkage found in box bein
+g split [264]) (./tables/tab:err_attitude.tex
+ignored: Infinite glue shrinkage found in b
+ox being split
+[265]
+ignored: Infinite glue shrinkage found in box being split [266]
+ignored: Infinite glue shrink
+age found in box being split [267]
+ignored: Infinite glue shrinkage found in box being sp
+lit [268]
+ignored: Infinite glue shrinkage found in box being split [269]
+ignored: Infinite glue sh
+rinkage found in box being split [270]
+ignored: Infinite glue shrinkage found in box bein
+g split [271]) [272] (./main.aux)
  ***********
 LaTeX2e <2025-11-01>
 L3 programming layer <2026-01-19>
  ***********
 Package rerunfilecheck Info: File `main.out' has not changed.
-(rerunfilecheck)             Checksum: 37AD4D5D3B17D2621D661FDCE67CB386;78.
+(rerunfilecheck)             Checksum: 43AD71A79277C730D9E35C1C3E1CDFB2;4119.
  ) 
 Here is how much of TeX's memory you used:
- 11509 strings out of 467525
- 182174 string characters out of 5418982
- 930670 words of memory out of 5000000
- 40120 multiletter control sequences out of 15000+600000
- 635672 words of font info for 118 fonts, out of 8000000 for 9000
+ 12049 strings out of 467525
+ 191626 string characters out of 5418982
+ 1188343 words of memory out of 5000000
+ 40298 multiletter control sequences out of 15000+600000
+ 636223 words of font info for 124 fonts, out of 8000000 for 9000
  1141 hyphenation exceptions out of 8191
- 75i,10n,79p,4155b,585s stack positions out of 10000i,1000n,20000p,200000b,200000s
+ 75i,10n,79p,6647b,585s stack positions out of 10000i,1000n,20000p,200000b,200000s
 </usr/local/texlive/2026/texmf-dist/fonts/type1/public/amsfonts/cm/cmbx10.pfb
 ></usr/local/texlive/2026/texmf-dist/fonts/type1/public/amsfonts/cm/cmbx12.pfb>
 </usr/local/texlive/2026/texmf-dist/fonts/type1/public/amsfonts/cm/cmmi10.pfb><
-/usr/local/texlive/2026/texmf-dist/fonts/type1/public/amsfonts/cm/cmr10.pfb></u
-sr/local/texlive/2026/texmf-dist/fonts/type1/public/amsfonts/cm/cmr12.pfb></usr
-/local/texlive/2026/texmf-dist/fonts/type1/public/amsfonts/cm/cmr17.pfb></usr/l
-ocal/texlive/2026/texmf-dist/fonts/type1/public/amsfonts/cm/cmsy10.pfb></usr/lo
-cal/texlive/2026/texmf-dist/fonts/type1/public/amsfonts/cm/cmti10.pfb></usr/loc
-al/texlive/2026/texmf-dist/fonts/type1/public/cm-super/sfrm1000.pfb>
-Output written on main.pdf (31 pages, 338128 bytes).
+/usr/local/texlive/2026/texmf-dist/fonts/type1/public/amsfonts/cm/cmmi12.pfb></
+usr/local/texlive/2026/texmf-dist/fonts/type1/public/amsfonts/cm/cmr10.pfb></us
+r/local/texlive/2026/texmf-dist/fonts/type1/public/amsfonts/cm/cmr12.pfb></usr/
+local/texlive/2026/texmf-dist/fonts/type1/public/amsfonts/cm/cmr17.pfb></usr/lo
+cal/texlive/2026/texmf-dist/fonts/type1/public/amsfonts/cm/cmsy10.pfb></usr/loc
+al/texlive/2026/texmf-dist/fonts/type1/public/amsfonts/cm/cmti10.pfb></usr/loca
+l/texlive/2026/texmf-dist/fonts/type1/public/cm-super/sfrm1000.pfb>
+Output written on main.pdf (272 pages, 1043988 bytes).
 PDF statistics:
- 328 PDF objects out of 1000 (max. 8388607)
- 174 compressed objects within 2 object streams
- 42 named destinations out of 1000 (max. 500000)
- 24595 words of extra memory for PDF output out of 24883 (max. 10000000)
+ 1545 PDF objects out of 1728 (max. 8388607)
+ 1138 compressed objects within 12 object streams
+ 331 named destinations out of 1000 (max. 500000)
+ 26859 words of extra memory for PDF output out of 29859 (max. 10000000)
 

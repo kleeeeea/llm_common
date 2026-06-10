@@ -1,7 +1,9 @@
 # adapt to open learn lm
 # the backfill script for open learn lm is accidentally deleted, restored it
-from llm_common.llm_infer.scripts.backfill_openlearnlm import main as backfill_openlearnlm_main
 from llm_common.report.get_aggregated_result import get_aggregated_result_main
+from llm_common.report.scripts.backfill_openlearnlm import backfill_openlearnlm_main
+
+
 
 
 def main() -> None:

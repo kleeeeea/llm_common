@@ -1,4 +1,5 @@
 import json
+import re
 from pathlib import Path
 
 from llm_common.report.get_per_row_result import LLMInferPerRowReport
@@ -58,6 +59,49 @@ def _user_prompt(messages: list) -> str:
     ).strip()
 
 
+def _letter(value) -> str | None:
+    """Normalize a candidate answer to a single A-D letter."""
+    if value is None:
+        return None
+    s = str(value).strip().upper()
+    if not s:
+        return None
+    if s in {"A", "B", "C", "D"}:
+        return s
+    m = re.match(r"^\s*([A-D])(?:\b|[.)、:：])", s)
+    return m.group(1) if m else None
+
+
+def _pred_from_raw_content(raw_content, fallback=None) -> str | None:
+    """Extract the objective MCQ answer from the model text.
+
+    The openlearnlm response files can contain stale ``model_answer`` values.
+    Prefer explicit final-answer statements in ``raw_content``; only fall back
+    to the precomputed field when the text does not expose a clear letter.
+    """
+    text = str(raw_content or "").strip()
+    if not text:
+        return _letter(fallback)
+
+    # Direct answer only, e.g. "D" or "D.".
+    direct = _letter(text)
+    if direct and len(text) <= 8:
+        return direct
+
+    patterns = [
+        r"final\s+answer\s*(?:is|:)?\s*(?:\*\*)?\s*([A-D])\b",
+        r"answer\s*(?:is|:)\s*(?:\*\*)?\s*([A-D])\b",
+        r"based\s+on\s+this\s+analysis,\s*the\s+answer\s+is\s*([A-D])\b",
+        r"therefore\s*:?\s*([A-D])\b",
+    ]
+    for pattern in patterns:
+        matches = list(re.finditer(pattern, text, flags=re.IGNORECASE))
+        if matches:
+            return matches[-1].group(1).upper()
+
+    return _letter(fallback)
+
+
 def _to_report(r: dict, category: str = "") -> LLMInferPerRowReport:
     """Map one openlearnlm response record to an LLMInferPerRowReport.
 
@@ -98,6 +142,13 @@ def _to_report(r: dict, category: str = "") -> LLMInferPerRowReport:
     if judge_extra:
         extra["extra"] = judge_extra
 
+    gold = None if is_judge else _letter(r.get("expected_answer"))
+    pred = None if is_judge else _pred_from_raw_content(
+        r.get("raw_content"),
+        fallback=(check.get("normalized_model_answer") or r.get("model_answer")),
+    )
+    correct = False if is_judge else (gold is not None and pred is not None and gold == pred)
+
     return LLMInferPerRowReport(
         id                = str(item_id) if item_id is not None else "",
         prompt            = prompt,
@@ -109,9 +160,9 @@ def _to_report(r: dict, category: str = "") -> LLMInferPerRowReport:
         total_tokens      = usage.get("total_tokens"),
         latency_ms        = r.get("latency_ms"),
         # objective letter match (only meaningful for non-judge rows).
-        gold              = None if is_judge else r.get("expected_answer"),
-        pred              = None if is_judge else r.get("model_answer"),
-        correct           = bool(r.get("is_correct")),
+        gold              = gold,
+        pred              = pred,
+        correct           = correct,
         # subjective judge scoring.
         score             = check.get("score") if is_judge else None,
         judge_reasoning   = check.get("reasoning") if is_judge else None,
@@ -158,7 +209,7 @@ def backfill_one(src: Path, allowed_ids: set | None = None) -> Path | None:
     return report_path
 
 
-def main() -> list[Path]:
+def backfill_openlearnlm_main() -> list[Path]:
     report_paths: list[Path] = []
     for category in CATEGORIES:
         category_dir = RESPONSES_ROOT / category
@@ -179,4 +230,4 @@ def main() -> list[Path]:
 
 
 if __name__ == '__main__':
-    main()
+    backfill_openlearnlm_main()

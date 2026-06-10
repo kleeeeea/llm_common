@@ -15,10 +15,53 @@ from llm_common.report.get_per_row_result import SAMPLE_LLMOUTPUT
 import os
 import re
 from collections import defaultdict
+from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any
+from typing import Any, Union
 
 import pandas as pd
+
+from llm_common.llm_infer.api_info.dataclass_ import model_alias_for
+
+
+def _model_display(model: str) -> str:
+    """Human-facing model name for tables: the registered alias, else the raw name.
+
+    Grouping/keys keep using the raw ``r.model``; only what the reader sees is
+    aliased (e.g. ``kimi`` -> ``Innospark-1T``).
+    """
+    return model_alias_for(model or "unknown")
+
+
+# ---------------------------------------------------------------------------
+# Document schema — a typed description of one report section, so the assembly
+# code can't silently misspell a key (the old loose ``dict`` approach).
+# ---------------------------------------------------------------------------
+
+# A table entry is either a bare table label, or a ``(subsection_title, label)``
+# pair that prefixes a ``\subsection`` heading before the ``\input``.
+TableEntry = Union[str, tuple[str, str]]
+
+
+@dataclass(frozen=True)
+class FigureEntry:
+    """One ``\\includegraphics`` block: a figure path, caption, and label."""
+    relpath: str
+    caption: str
+    label: str
+
+
+@dataclass
+class ReportSection:
+    """One ``\\section`` of the report: a title plus its tables and figures.
+
+    Rendered in order by ``_write_combined_document``; the caller controls
+    layout simply by the order it appends sections.
+    """
+    title: str
+    tables: list[TableEntry] = field(default_factory=list)
+    figures: list[FigureEntry] = field(default_factory=list)
+
 
 # ---------------------------------------------------------------------------
 # Data-source roots
@@ -54,6 +97,13 @@ def model_from_path(path: str | Path) -> str:
     if "_batch_infer_" in stem:
         return stem.split("_batch_infer_", 1)[-1]
     return parent
+
+
+def _write_table_tex(label: str, table_tex: str) -> None:
+    """Write one LaTeX table fragment under ``latex/tables``."""
+    tables_dir = Path(__file__).resolve().parent / "latex" / "tables"
+    tables_dir.mkdir(parents=True, exist_ok=True)
+    (tables_dir / f"{label}.tex").write_text(table_tex, encoding="utf-8")
 
 
 # ---------------------------------------------------------------------------
@@ -170,7 +220,7 @@ def generate_overall_latex_table(
     ordered = sorted(stats.items())
     for model, per_cat in ordered:
         cells = [_score(per_cat.get(c)) for c in col_keys]
-        lines.append(_row(model, cells, pct=False))
+        lines.append(_row(_model_display(model), cells, pct=False))
 
     if len(ordered) == 2:
         (m1, c1), (m2, c2) = ordered
@@ -179,7 +229,9 @@ def generate_overall_latex_table(
             v1, v2 = _score(c1.get(c)), _score(c2.get(c))
             deltas.append(v2 - v1 if (v1 is not None and v2 is not None) else None)
         lines.append(r"    \midrule")
-        lines.append(_row(f"$\\Delta$ ({m2} $-$ {m1})", deltas, pct=True))
+        lines.append(_row(
+            f"$\\Delta$ ({_model_display(m2)} $-$ {_model_display(m1)})",
+            deltas, pct=True))
     lines += [
         r"    \bottomrule",
         r"  \end{tabular}",
@@ -189,55 +241,7 @@ def generate_overall_latex_table(
     ]
     table_tex = "\n".join(lines)
 
-    # --- write latex artefacts ---
-    latex_dir  = Path(__file__).resolve().parent / "latex"
-    tables_dir = latex_dir / "tables"
-    tables_dir.mkdir(parents=True, exist_ok=True)
-    (tables_dir / f"{label}.tex").write_text(table_tex, encoding="utf-8")
-
-    main_tex = rf"""\documentclass{{article}}
-\usepackage{{booktabs}}
-\usepackage{{hyperref}}
-\hypersetup{{colorlinks=true, linkcolor=blue, urlcolor=blue}}
-\usepackage{{microtype}}
-\usepackage{{geometry}}
-\geometry{{margin=2.5cm}}
-
-\title{{Praxis Reading-1 Evaluation Results}}
-\author{{llm\_evals / praxis\_reading\_1}}
-\date{{\today}}
-
-\begin{{document}}
-\maketitle
-
-\section{{Results}}
-
-Table~\ref{{{label}}} shows MCQ accuracy on the Praxis Reading sample set
-(\texttt{{prompts\_sample\_8}}).
-Acc\textsubscript{{all}} = correct / total questions;
-Acc\textsubscript{{ans}} = correct / answered questions (unanswered rows excluded).
-
-\input{{tables/{label}}}
-
-\end{{document}}
-"""
-    (latex_dir / "main.tex").write_text(main_tex, encoding="utf-8")
-
-    compile_sh = """\
-#!/usr/bin/env bash
-# Compile main.tex → main.pdf  (pdflatex, two passes for cross-references)
-set -euo pipefail
-cd "$(dirname "$0")"
-echo "==> Pass 1: pdflatex"
-pdflatex -interaction=nonstopmode main.tex
-echo "==> Pass 2: pdflatex"
-pdflatex -interaction=nonstopmode main.tex
-echo "==> Done: main.pdf"
-"""
-    compile_path = latex_dir / "compile.sh"
-    compile_path.write_text(compile_sh, encoding="utf-8")
-    compile_path.chmod(0o755)
-
+    _write_table_tex(label, table_tex)
     return table_tex
 
 
@@ -273,12 +277,12 @@ def generate_category_table(
     for model, per_cat in ordered:
         c = per_cat.get(category) or {"total": 0, "answered": 0, "correct": 0, "score_sum": 0.0}
         n, ans, cor = int(c["total"]), int(c["answered"]), int(c["correct"])
-        lines.append(f"    {model} & {n} & {ans} & {cor} & {_score(c):.1f}\\% \\\\")
+        lines.append(f"    {_model_display(model)} & {n} & {ans} & {cor} & {_score(c):.1f}\\% \\\\")
     if len(ordered) == 2:
         (m1, c1), (m2, c2) = ordered
         d = _score(c2.get(category)) - _score(c1.get(category))
         lines.append(r"    \midrule")
-        lines.append(f"    $\\Delta$ ({m2} $-$ {m1}) & & & & {d:+.1f}\\% \\\\")
+        lines.append(f"    $\\Delta$ ({_model_display(m2)} $-$ {_model_display(m1)}) & & & & {d:+.1f}\\% \\\\")
     lines += [
         r"    \bottomrule",
         r"  \end{tabular}",
@@ -288,9 +292,230 @@ def generate_category_table(
     ]
     table_tex = "\n".join(lines)
 
-    tables_dir = Path(__file__).resolve().parent / "latex" / "tables"
-    tables_dir.mkdir(parents=True, exist_ok=True)
-    (tables_dir / f"{label}.tex").write_text(table_tex, encoding="utf-8")
+    _write_table_tex(label, table_tex)
+    return table_tex
+
+
+def per_instance_deltas(reports: list) -> list[dict]:
+    """Per-item score difference between the two models.
+
+    Pairs reports by item id, computes each model's normalized score, and the
+    delta (second model − first, alphabetical). Items not answered by exactly
+    two models (or missing a score) are skipped. Sorted by ``|delta|`` desc.
+    """
+    by_item: dict = defaultdict(dict)
+    for r in reports:
+        ns = _normalized_score(r)
+        by_item[r.id][r.model] = (ns, (r.extra or {}).get("category", ""))
+
+    rows: list[dict] = []
+    for item_id, md in by_item.items():
+        models = sorted(md)
+        if len(models) != 2:
+            continue
+        m1, m2 = models
+        (s1, cat), (s2, _) = md[m1], md[m2]
+        if s1 is None or s2 is None:
+            continue
+        rows.append({
+            "item_id": item_id, "category": cat,
+            "model1": m1, "score1": s1,
+            "model2": m2, "score2": s2,
+            "delta": s2 - s1,
+        })
+    rows.sort(key=lambda d: abs(d["delta"]), reverse=True)
+    return rows
+
+
+# Heavy rule separating per-item blocks (more visible than \midrule).
+_BLOCK_SEP = r"  \specialrule{1.2pt}{8pt}{8pt}"
+
+# |Δ| magnitude buckets (lo ≤ |Δ| < hi), largest first.
+_DELTA_BUCKETS = [
+    (0.75, 1.01, r"$|\Delta| \geq 75\%$"),
+    (0.50, 0.75, r"$50\% \leq |\Delta| < 75\%$"),
+    (0.25, 0.50, r"$25\% \leq |\Delta| < 50\%$"),
+    (1e-9, 0.25, r"$0 < |\Delta| < 25\%$"),
+]
+
+# Signed Δ buckets for detailed answer-comparison sections. These do not use
+# absolute value: negative means the second model scored lower than the first.
+_SIGNED_DELTA_BUCKETS = [
+    (-1.01, -0.75, r"$\Delta \leq -75\%$", "neg75"),
+    (-0.75, -0.50, r"$-75\% < \Delta \leq -50\%$", "neg50"),
+    (-0.50, -0.25, r"$-50\% < \Delta \leq -25\%$", "neg25"),
+    (-0.25, -1e-9, r"$-25\% < \Delta < 0$", "neg0"),
+    (1e-9, 0.25, r"$0 < \Delta < 25\%$", "pos0"),
+    (0.25, 0.50, r"$25\% \leq \Delta < 50\%$", "pos25"),
+    (0.50, 0.75, r"$50\% \leq \Delta < 75\%$", "pos50"),
+    (0.75, 1.01, r"$\Delta \geq 75\%$", "pos75"),
+]
+
+
+def generate_disagreement_table(
+        reports: list,
+        per_bucket_limit: int = 40,
+        label: str = "tab:disagreement",
+        caption: str = "",
+) -> str:
+    """Per-instance score differences grouped into |Δ| magnitude buckets, with
+    the concrete instances listed under each bucket (largest first).
+
+    Writes ``latex/tables/<label>.tex`` and returns the fragment (empty string
+    when there aren't exactly two comparable models)."""
+    deltas = per_instance_deltas(reports)
+    if not deltas:
+        return ""
+    m1, m2 = deltas[0]["model1"], deltas[0]["model2"]
+    n_diff = sum(1 for d in deltas if abs(d["delta"]) > 1e-9)
+
+    if not caption:
+        caption = (
+            rf"Per-instance score differences ($\Delta = $ {_model_display(m2)} $-$ "
+            rf"{_model_display(m1)}), grouped "
+            rf"by magnitude; {n_diff} of {len(deltas)} shared items differ. "
+            r"Normalized scores (objective 0/1, subjective score/10)."
+        )
+
+    header = (
+        rf"  \textbf{{ID}} & \textbf{{Category}} & \textbf{{{_latex_cell(_model_display(m1))}}}"
+        rf" & \textbf{{{_latex_cell(_model_display(m2))}}} & \textbf{{$\Delta$}} \\"
+    )
+    lines = [
+        r"\begin{longtable}{@{}l l r r r@{}}",
+        rf"  \caption{{{caption}}}\label{{{label}}} \\",
+        r"  \toprule", header, r"  \midrule", r"  \endfirsthead",
+        r"  \toprule", header, r"  \midrule", r"  \endhead",
+    ]
+    for lo, hi, title in _DELTA_BUCKETS:
+        items = sorted(
+            (d for d in deltas if lo <= abs(d["delta"]) < hi),
+            key=lambda d: d["delta"],
+        )
+        if not items:
+            continue
+        lines.append(
+            rf"  \multicolumn{{5}}{{@{{}}l}}{{\textbf{{{title}}} \quad "
+            rf"({len(items)} items)}} \\"
+        )
+        lines.append(r"  \midrule")
+        for d in items[:per_bucket_limit]:
+            lines.append(
+                f"  {_latex_cell(d['item_id'])} & {_cat_display(d['category'])} &"
+                f" {d['score1'] * 100:.0f}\\% & {d['score2'] * 100:.0f}\\%"
+                f" & {d['delta'] * 100:+.0f}\\% \\\\"
+            )
+        if len(items) > per_bucket_limit:
+            lines.append(
+                rf"  \multicolumn{{5}}{{@{{}}l}}{{\textit{{\ldots\ "
+                rf"{len(items) - per_bucket_limit} more}}}} \\"
+            )
+        lines.append(r"  \midrule")
+    lines += [r"  \bottomrule", r"\end{longtable}"]
+    table_tex = "\n".join(lines)
+
+    _write_table_tex(label, table_tex)
+    return table_tex
+
+
+def _paired_reports(reports: list) -> list[tuple]:
+    """Pair reports by item id → ``(item_id, m1, r1, m2, r2, delta)``.
+
+    Only items answered by exactly two models (with scores) are kept; sorted by
+    ``|delta|`` desc."""
+    by_item: dict = defaultdict(dict)
+    for r in reports:
+        by_item[r.id][r.model] = r
+    pairs: list[tuple] = []
+    for item_id, md in by_item.items():
+        if len(md) != 2:
+            continue
+        m1, m2 = sorted(md)
+        r1, r2 = md[m1], md[m2]
+        s1, s2 = _normalized_score(r1), _normalized_score(r2)
+        if s1 is None or s2 is None:
+            continue
+        pairs.append((item_id, m1, r1, m2, r2, s2 - s1))
+    pairs.sort(key=lambda p: abs(p[5]), reverse=True)
+    return pairs
+
+
+def generate_comparison_table(
+        reports: list,
+        top_n: int = 15,
+        label: str = "tab:comparison",
+        caption: str = "",
+        category: str | None = None,
+        delta_range: tuple[float, float] | None = None,
+        delta_title: str = "",
+) -> str:
+    """Side-by-side answer comparison for the top-N most divergent items.
+
+    One block per item: the question (+ options), the reference/gold answer, and
+    each model's answer + reasoning — so the two models' differing responses to
+    the *same* question sit together. Writes ``latex/tables/<label>.tex``.
+
+    When *category* is given, only items in that benchmark category are compared.
+    When *delta_range* is given, only signed deltas in ``[lo, hi)`` are included,
+    so positive and negative movements are reported separately."""
+    if category is not None:
+        reports = [r for r in reports if (r.extra or {}).get("category", "") == category]
+    pairs = [p for p in _paired_reports(reports) if abs(p[5]) > 1e-9]
+    if delta_range is not None:
+        lo, hi = delta_range
+        pairs = [p for p in pairs if lo <= p[5] < hi]
+        pairs.sort(key=lambda p: p[5], reverse=lo > 0)
+    pairs = pairs[:top_n]
+    if not pairs:
+        return ""
+
+    if not caption:
+        scope = f"{_cat_display(category)} " if category is not None else ""
+        delta_scope = f" ({delta_title})" if delta_title else ""
+        caption = (
+            rf"{scope}per-instance answer comparison{delta_scope} for the {len(pairs)} most "
+            r"divergent items: same question, each model's answer and reasoning."
+        )
+
+    def _ans(r) -> str:
+        if r.score is not None:
+            return rf"score {r.score:g}/10"
+        return "answer " + (_latex_cell(r.pred) or r"\textit{--}")
+
+    def _reason(r) -> str:
+        src = r.reasoning or r.judge_reasoning or r.llm_response or ""
+        return _latex_cell(src, preserve_newlines=True, max_lines=8) or r"\textit{--}"
+
+    lines = [
+        r"\begin{longtable}{@{}l p{12.5cm}@{}}",
+        rf"  \caption{{{caption}}}\label{{{label}}} \\",
+        r"  \toprule", r"  \endfirsthead", r"  \toprule", r"  \endhead",
+    ]
+    for item_id, ma, ra, mb, rb, delta in pairs:
+        e = ra.extra or {}
+        question = _latex_cell(e.get("prompt") or e.get("question", ""), preserve_newlines=True)
+        ref = _latex_cell(e.get("answer", ""), preserve_newlines=True, max_lines=8)
+        lines.append(
+            rf"  \multicolumn{{2}}{{@{{}}l}}{{\textbf{{{_latex_cell(item_id)}}} "
+            rf"\quad $\Delta = {delta * 100:+.0f}\%$}} \\"
+        )
+        lines.append(rf"  \textbf{{Question}} & {question} \\")
+        if ra.score is not None and ref:
+            lines.append(rf"  \textbf{{Reference}} & {ref} \\")
+        elif ra.gold is not None:
+            lines.append(rf"  \textbf{{Gold}} & {_latex_cell(ra.gold)} \\")
+        lines.append(r"  \midrule")
+        # each model's answer + reasoning
+        lines.append(rf"  \textbf{{{_latex_cell(_model_display(ma))}}} & {_ans(ra)} \\")
+        lines.append(rf"  & {_reason(ra)} \\")
+        lines.append(rf"  \textbf{{{_latex_cell(_model_display(mb))}}} & {_ans(rb)} \\")
+        lines.append(rf"  & {_reason(rb)} \\")
+        # heavy rule between items so different questions are clearly separated.
+        lines.append(_BLOCK_SEP)
+    lines += [r"  \bottomrule", r"\end{longtable}"]
+    table_tex = "\n".join(lines)
+
+    _write_table_tex(label, table_tex)
     return table_tex
 
 
@@ -355,8 +580,15 @@ def _latex_cell(
             if ln:
                 cleaned.append(_esc(ln))
         if max_lines is not None and len(cleaned) > max_lines:
-            cleaned = cleaned[:max_lines]
-            cleaned.append(r"\textit{[\ldots\ truncated]}")
+            # Keep the head (setup) AND the tail (conclusion), cut the middle —
+            # so a final "the answer is …" line isn't lost to truncation.
+            tail = min(3, max(1, max_lines // 3))
+            head = max(1, max_lines - tail)
+            cleaned = (
+                cleaned[:head]
+                + [r"\textit{[\ldots\ truncated \ldots]}"]
+                + cleaned[-tail:]
+            )
         out = r" \newline ".join(cleaned)
     else:
         out = _esc(" ".join(s.split()))
@@ -375,6 +607,7 @@ def generate_error_table(
         caption: str = "",
         label: str = "tab:praxis_errors",
         per_model_limit: int | None = None,
+        category: str | None = None,
 ) -> str:
     """Collect the *wrong* answered rows into a LaTeX ``longtable``.
 
@@ -385,8 +618,22 @@ def generate_error_table(
 
     *per_model_limit*: keep only the first N errors per model (reasoning stays
     full) — caps the report size when there are many long-reasoning errors.
+    *category*: restrict to errors from one benchmark category.
     """
-    errors = [r for r in reports if r.pred is not None and not r.correct]
+    # What counts as an "error":
+    # - objective (has pred): wrong answer.
+    # - subjective (has score): score below 50% of max (regardless of the
+    #   binary is_correct flag, which may use a different threshold).
+    def _is_error(r) -> bool:
+        if r.score is not None:
+            return float(r.score) < JUDGE_MAX_SCORE * 0.5
+        if r.pred is not None:
+            return not r.correct
+        return False
+
+    errors = [r for r in reports if _is_error(r)]
+    if category is not None:
+        errors = [r for r in errors if (r.extra or {}).get("category", "") == category]
 
     if per_model_limit is not None:
         grouped: dict[str, list] = defaultdict(list)
@@ -395,11 +642,13 @@ def generate_error_table(
         errors = [r for rs in grouped.values() for r in rs[:per_model_limit]]
 
     if not caption:
+        scope = f"{_cat_display(category)} " if category is not None else ""
         suffix = (f" (first {per_model_limit} per model)"
                   if per_model_limit is not None else "")
         caption = (
-            r"Incorrectly answered questions" + suffix + r": gold answer vs.\ "
-            r"the model's prediction and reasoning."
+            scope + r"failed questions" + suffix +
+            r" (objective: wrong; subjective: score $<$ 50\%): "
+            r"gold/score vs.\ the model's prediction and reasoning."
         )
 
     # Two columns: field name (left) + wide value column that wraps.
@@ -414,42 +663,43 @@ def generate_error_table(
     if not errors:
         lines.append(r"  \multicolumn{2}{c}{\textit{No incorrect answers.}} \\")
     for r in errors:
-        # No truncation — show the full text; keep the a./b./c. choices and
-        # passage paragraphs on separate lines.
-        passage   = _latex_cell((r.extra or {}).get("passage", ""), preserve_newlines=True, strip_line_numbers=True) or r"\textit{--}"
-        # Use the full prompt (question stem + A./B./C./D. options) so the
-        # answer choices are shown; fall back to the bare question.
         e = r.extra or {}
+        # No truncation for question/passage; reasoning + reference answer are
+        # capped so one block can't fill a page.
+        passage   = _latex_cell(e.get("passage", ""), preserve_newlines=True, strip_line_numbers=True)
+        # Full prompt (question stem + A./B./C./D. options); fall back to question.
         question  = _latex_cell(e.get("prompt") or e.get("question", ""), preserve_newlines=True)
-        gold      = _latex_cell(r.gold)
-        # Model row: just the extracted answer (letter / judge score).
-        model_ans = _latex_cell(r.pred) or _latex_cell(r.score) or r"\textit{--}"
-        # Reasoning row: the model's full response / thinking — prefer an
-        # explicit reasoning/judge field, else the raw llm_response (which for
-        # praxis carries the <think>…</think> block).
+        # Reference / expected answer (the grading reference for subjective items).
+        answer    = _latex_cell(e.get("answer", ""), preserve_newlines=True, max_lines=REASONING_MAX_LINES)
         reasoning_src = r.reasoning or r.judge_reasoning or r.llm_response or ""
-        # Cap reasoning length so one long block can't fill a page.
         reasoning = _latex_cell(
             reasoning_src, preserve_newlines=True, max_lines=REASONING_MAX_LINES,
         ) or r"\textit{--}"
 
         # One field per row; the ID heads the block spanning both columns.
         lines.append(rf"  \multicolumn{{2}}{{@{{}}l}}{{\textbf{{{_latex_cell(r.id)}}}}} \\")
-        lines.append(rf"  \textbf{{Passage}}   & {passage}    \\")
+        if passage:  # only objective reading items have a passage
+            lines.append(rf"  \textbf{{Passage}}   & {passage}    \\")
         lines.append(rf"  \textbf{{Question}}  & {question}   \\")
-        lines.append(rf"  \textbf{{Gold}}      & {gold}       \\")
-        lines.append(rf"  \textbf{{Model}}     & {model_ans}  \\")
+        if r.score is not None:
+            # subjective: reference answer + judge score (no letter gold/pred).
+            if answer:
+                lines.append(rf"  \textbf{{Reference}} & {answer}      \\")
+            lines.append(rf"  \textbf{{Score}}     & {r.score:g}/10  \\")
+        else:
+            # objective: gold answer vs model's predicted letter.
+            lines.append(rf"  \textbf{{Gold}}      & {_latex_cell(r.gold)}       \\")
+            lines.append(rf"  \textbf{{Model}}     & {_latex_cell(r.pred) or r'\textit{--}'}  \\")
         lines.append(rf"  \textbf{{Reasoning}} & {reasoning}  \\")
-        lines.append(r"  \midrule")
+        # heavy rule between items so different questions are clearly separated.
+        lines.append(_BLOCK_SEP)
     lines += [
         r"  \bottomrule",
         r"\end{longtable}",
     ]
     table_tex = "\n".join(lines)
 
-    tables_dir = Path(__file__).resolve().parent / "latex" / "tables"
-    tables_dir.mkdir(parents=True, exist_ok=True)
-    (tables_dir / f"{label}.tex").write_text(table_tex, encoding="utf-8")
+    _write_table_tex(label, table_tex)
     return table_tex
 
 
@@ -534,9 +784,7 @@ def generate_model_settings_table(
     ]
     table_tex = "\n".join(lines)
 
-    tables_dir = Path(__file__).resolve().parent / "latex" / "tables"
-    tables_dir.mkdir(parents=True, exist_ok=True)
-    (tables_dir / f"{label}.tex").write_text(table_tex, encoding="utf-8")
+    _write_table_tex(label, table_tex)
     return table_tex
 
 
@@ -552,26 +800,28 @@ def _figure_block(relpath: str, caption: str, label: str, width: str = r"\linewi
     ])
 
 
-def _write_combined_document(
-        table_labels: list[str],
-        figures: list[tuple[str, str, str]] | None = None,
-        trailing_table_labels: list[str] | None = None,
-) -> None:
-    """Write ``latex/main.tex`` inputting every table fragment and figure.
+def _write_combined_document(sections: "list[ReportSection]") -> None:
+    """Write ``latex/main.tex`` from an ordered list of :class:`ReportSection`.
 
-    Order: *table_labels* → *figures* → *trailing_table_labels*. The trailing
-    slot is for long tables (e.g. the error longtable) that should come last so
-    they don't bury the figures / settings.
-
-    *figures* is a list of ``(relpath, caption, label)`` tuples; each is embedded
-    with ``\\includegraphics`` (paths are relative to the ``latex/`` directory).
+    Each section becomes a ``\\section`` followed by its table ``\\input``s and
+    figure blocks. Sections are emitted in order, so the caller controls layout
+    (and which tables come last).
     """
-    latex_dir = Path(__file__).resolve().parent / "latex"
-    blocks = [rf"\input{{tables/{lbl}}}" for lbl in table_labels]
-    for relpath, caption, label in (figures or []):
-        blocks.append(_figure_block(relpath, caption, label))
-    blocks += [rf"\input{{tables/{lbl}}}" for lbl in (trailing_table_labels or [])]
-    body = "\n\n".join(blocks)
+    parts: list[str] = []
+    for sec in sections:
+        if sec.title:
+            parts.append(rf"\section{{{sec.title}}}")
+        for item in sec.tables:
+            # item is a label, or (subsection_title, label) to prefix a heading.
+            if isinstance(item, tuple):
+                subtitle, lbl = item
+                parts.append(rf"\subsection{{{subtitle}}}")
+            else:
+                lbl = item
+            parts.append(rf"\input{{tables/{lbl}}}")
+        for fig in sec.figures:
+            parts.append(_figure_block(fig.relpath, fig.caption, fig.label))
+    body = "\n\n".join(parts)
     main_tex = rf"""\documentclass{{article}}
 \usepackage[utf8]{{inputenc}}
 \usepackage{{booktabs}}
@@ -592,12 +842,11 @@ def _write_combined_document(
 \begin{{document}}
 \maketitle
 
-\section{{Results}}
-
 {body}
 
 \end{{document}}
 """
+    latex_dir = Path(__file__).resolve().parent / "latex"
     (latex_dir / "main.tex").write_text(main_tex, encoding="utf-8")
 
 def get_aggregated_result_main(scored_paths: "list | None" = None):
@@ -628,12 +877,11 @@ def get_aggregated_result_main(scored_paths: "list | None" = None):
     # two models the table also shows their score delta.
     stats = _group_by_model(reports)
     overall_tex = generate_overall_latex_table(stats)
-    print(overall_tex)
     if len(stats) == 2:
         (m1, s1), (m2, s2) = sorted(stats.items())
         ov = lambda s: (s["__overall__"]["score_sum"] / s["__overall__"]["total"] * 100
                         if s.get("__overall__", {}).get("total") else 0.0)
-        print(f"\nΔ overall score ({m2} − {m1}): {ov(s2) - ov(s1):+.1f}%")
+        print(f"\nΔ overall score ({_model_display(m2)} − {_model_display(m1)}): {ov(s2) - ov(s1):+.1f}%")
 
     # One detail table per category (same format), in addition to the matrix.
     categories = sorted({c for m in stats for c in stats[m] if c != "__overall__"})
@@ -642,6 +890,40 @@ def get_aggregated_result_main(scored_paths: "list | None" = None):
         lbl = f"tab:cat_{_cat_display(cat).lower()}"
         generate_category_table(stats, cat, label=lbl)
         category_labels.append(lbl)
+
+    # Per-instance comparison of the two models (skipped unless exactly two).
+    deltas = per_instance_deltas(reports)
+    disagreement_label = None
+    if deltas:
+        m1, m2 = deltas[0]["model1"], deltas[0]["model2"]
+        n = len(deltas)
+        mean_abs = sum(abs(d["delta"]) for d in deltas) / n
+        n_better2 = sum(1 for d in deltas if d["delta"] > 0)
+        n_tie     = sum(1 for d in deltas if d["delta"] == 0)
+        n_better1 = sum(1 for d in deltas if d["delta"] < 0)
+        print(f"\nPer-instance ({n} shared items): mean |Δ| = {mean_abs * 100:.1f}% | "
+              f"{_model_display(m2)} better: {n_better2} | tie: {n_tie} | "
+              f"{_model_display(m1)} better: {n_better1}")
+        disagreement_label = "tab:disagreement"
+        generate_disagreement_table(reports, per_bucket_limit=40, label=disagreement_label)
+        # Split the answer comparison into signed Δ sections within each category.
+        # Negative and positive deltas are intentionally separate: Δ is not
+        # bucketed by absolute value here.
+        comparison_items: list[tuple[str, str]] = []
+        for cat in categories:
+            disp = _cat_display(cat)
+            for lo, hi, title, suffix in _SIGNED_DELTA_BUCKETS:
+                lbl = f"tab:cmp_{disp.lower()}_{suffix}"
+                tex = generate_comparison_table(
+                    reports,
+                    top_n=15,
+                    label=lbl,
+                    category=cat,
+                    delta_range=(lo, hi),
+                    delta_title=title,
+                )
+                if tex:  # skip empty category × band combinations
+                    comparison_items.append((f"{disp}: {title}", lbl))
 
     # Render the run's model_settings as a key/value table (secrets redacted).
     settings_tex = generate_model_settings_table(reports)
@@ -652,36 +934,56 @@ def get_aggregated_result_main(scored_paths: "list | None" = None):
     from llm_common.report.plot_numeric import generate_numeric_plots
     latex_dir = Path(__file__).resolve().parent / "latex"
     plot_paths = generate_numeric_plots(reports, latex_dir / "figures")
-    figures = []
+    figures: list[FigureEntry] = []
     if plot_paths:
         uni_pdf, multi_pdf = plot_paths
         figures = [
-            (f"figures/{uni_pdf.name}",
-             r"Univariate distributions of the per-row numeric fields, conditioned "
-             r"on whether the answer was correct (histogram + KDE + rug).",
-             "fig:numeric_univariate"),
-            (f"figures/{multi_pdf.name}",
-             r"Pairwise relationships between the numeric fields, coloured by "
-             r"correctness: scatter (lower triangle), per-group distribution "
-             r"(diagonal), Pearson $r$ (upper triangle).",
-             "fig:numeric_multivariate"),
+            FigureEntry(
+                f"figures/{uni_pdf.name}",
+                r"Univariate distributions of the per-row numeric fields, conditioned "
+                r"on whether the answer was correct (histogram + KDE + rug).",
+                "fig:numeric_univariate"),
+            FigureEntry(
+                f"figures/{multi_pdf.name}",
+                r"Pairwise relationships between the numeric fields, coloured by "
+                r"correctness: scatter (lower triangle), per-group distribution "
+                r"(diagonal), Pearson $r$ (upper triangle).",
+                "fig:numeric_multivariate"),
         ]
 
-    # Collect the wrong questions into a LaTeX table: question, correct answer,
-    # the model's answer, and its reasoning/process.
-    error_tex = generate_error_table(reports, per_model_limit=20)
-    print("\n" + error_tex)
+    # One error table per category (question, correct answer / score, the
+    # model's answer, and its reasoning). Each is capped per model.
+    # (category display name, table label) so each gets a \subsection heading.
+    error_items: list[tuple[str, str]] = []
+    for cat in categories:
+        disp = _cat_display(cat)
+        lbl = f"tab:err_{disp.lower()}"
+        generate_error_table(reports, label=lbl, per_model_limit=20, category=cat)
+        error_items.append((disp, lbl))
 
-    # Order: score tables → model settings → figures → error table (last, since
-    # it's the longest and shouldn't bury the settings/figures).
-    _write_combined_document(
-        ["tab:praxis_reading", *category_labels, "tab:model_settings"],
-        figures=figures,
-        trailing_table_labels=["tab:praxis_errors"],
-    )
+    # Assemble the document as titled sections (errors last — longest content).
+    # ReportSection is a dataclass, so the schema (title/tables/figures) is
+    # enforced — a typo'd field raises at construction instead of silently
+    # vanishing the way a dict key would.
+    sections = [
+        ReportSection("Overall scores", tables=["tab:praxis_reading"]),
+        ReportSection("Per-category scores", tables=category_labels),
+    ]
+    if disagreement_label:
+        sections.append(
+            ReportSection("Per-instance model differences", tables=[disagreement_label])
+        )
+        if comparison_items:
+            sections.append(
+                ReportSection("Per-instance answer comparison", tables=comparison_items)
+            )
+    sections += [
+        ReportSection("Model settings", tables=["tab:model_settings"]),
+        ReportSection("Numeric field distributions", figures=figures),
+        ReportSection("Errors by category", tables=error_items),
+    ]
+    _write_combined_document(sections)
 
 
 if __name__ == "__main__":
     get_aggregated_result_main()
-
-
