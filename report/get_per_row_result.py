@@ -3,7 +3,7 @@ from dataclasses import dataclass
 from enum import StrEnum
 from pathlib import Path
 
-from llm_common.llm_infer.instances import LLMInferOutput
+from llm_common.llm_infer.instances import LLMInferResultRecord
 
 
 class JudgeType(StrEnum):
@@ -41,7 +41,7 @@ class JudgeType(StrEnum):
 
 
 @dataclass(frozen=True)
-class LLMInferPerRowReport(LLMInferOutput):
+class LLMInferPerRowReport(LLMInferResultRecord):
     """LLMInferOutput augmented with per-row MCQ scoring columns.
 
     Constructed via ``from_output`` so callers don't need to replicate the
@@ -73,7 +73,7 @@ class LLMInferPerRowReport(LLMInferOutput):
     @classmethod
     def from_output(
             cls,
-            out: LLMInferOutput,
+            out: LLMInferResultRecord,
             gold: str | None = None,
             pred: str | None = None,
             *,
@@ -124,7 +124,7 @@ class LLMInferPerRowReport(LLMInferOutput):
         Layers the scoring columns on top of ``LLMInferOutput.from_dict`` so the
         inherited ``from_csv`` / ``from_jsonl`` produce fully-typed reports.
         """
-        base = LLMInferOutput.from_dict(
+        base = LLMInferResultRecord.from_dict(
             row, model_settings=model_settings,
             image_paths=image_paths, image_data_urls=image_data_urls,
         )
@@ -192,7 +192,7 @@ SAMPLE_LLMOUTPUT = '/Users/l/klee_code/git_repos/llm_evals/parse_evaluation/prax
 def get_scored_file(
         llm_response_file: str
 ) -> Path:
-    outputs = LLMInferOutput.from_csv(llm_response_file)
+    outputs = LLMInferResultRecord.from_csv(llm_response_file)
 
     reports: list[LLMInferPerRowReport] = [
         LLMInferPerRowReport.from_output(

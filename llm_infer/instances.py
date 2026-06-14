@@ -2,11 +2,14 @@ import base64
 import json
 import os
 import sys
+from dataclasses import asdict
 from dataclasses import dataclass
 from dataclasses import field
+from dataclasses import replace
 from pathlib import Path
 from typing import Any
 from typing import Dict
+from typing import Literal
 from typing import Optional
 from typing import Sequence
 from typing import Union
@@ -131,20 +134,116 @@ def require_positive_number(name: str, value: float) -> None:
         raise ValueError(f"{name} must be positive, got {value!r}")
 
 @dataclass(frozen=True)
-class ModelSettings:
-    thinking: Dict[str, Any] = field(default_factory=lambda: {"type": "disabled"})
+class ChatCompletionContentPartText:
+    """Source: OpenAI `ChatCompletionContentPartText`.
+
+    https://developers.openai.com/api/reference/resources/chat/subresources/completions/methods/create
+    """
+
+    text: str
+    type: Literal["text"] = "text"
+
+
+@dataclass(frozen=True)
+class ChatCompletionImageURL:
+    """Source: OpenAI `ChatCompletionContentPartImage.image_url`.
+
+    https://developers.openai.com/api/reference/resources/chat/subresources/completions/methods/create
+    """
+
+    url: str
+    detail: Optional[Literal["auto", "low", "high"]] = None
+
+
+@dataclass(frozen=True)
+class ChatCompletionContentPartImage:
+    """Source: OpenAI `ChatCompletionContentPartImage`.
+
+    https://developers.openai.com/api/reference/resources/chat/subresources/completions/methods/create
+    """
+
+    image_url: ChatCompletionImageURL
+    type: Literal["image_url"] = "image_url"
+
+
+ChatCompletionUserContentPart = Union[
+    ChatCompletionContentPartText,
+    ChatCompletionContentPartImage,
+]
+ChatCompletionUserContent = Union[str, tuple[ChatCompletionUserContentPart, ...]]
+
+
+def build_user_content(
+        prompt: Union[str, list],
+        image_data_urls: Sequence[str],
+) -> ChatCompletionUserContent:
+    if not image_data_urls:
+        return prompt
+    return (
+        ChatCompletionContentPartText(text=str(prompt)),
+        *(
+            ChatCompletionContentPartImage(
+                image_url=ChatCompletionImageURL(url=image_data_url),
+            )
+            for image_data_url in image_data_urls
+        ),
+    )
+
+
+@dataclass(frozen=True)
+class ChatCompletionMessage:
+    """Source: OpenAI Chat Completions `messages` request parameter.
+
+    https://developers.openai.com/api/reference/resources/chat/subresources/completions/methods/create
+    """
+
+    role: str
+    content: ChatCompletionUserContent
+
+
+@dataclass(frozen=True)
+class ChatCompletionStreamOptions:
+    """Source: OpenAI Chat Completions `stream_options` request parameter.
+
+    https://developers.openai.com/api/reference/resources/chat/subresources/completions/methods/create
+    """
+
+    include_usage: bool = True
+
+
+@dataclass(frozen=True)
+class ChatCompletionThinking:
+    """Anthropic-compatible extension; not an OpenAI standard field.
+
+    https://docs.anthropic.com/en/api/messages
+    """
+
+    type: str
+
+
+@dataclass(frozen=True)
+class ChatCompletionRequest:
+    """OpenAI Chat Completions request plus local transport metadata.
+
+    Source:
+    https://developers.openai.com/api/reference/resources/chat/subresources/completions/methods/create
+
+    ``api``, ``timeout``, ``system_input``, and ``disable_maxtoken_hint`` are
+    local runtime metadata and are excluded from :meth:`to_dict`.
+    """
+
+    messages: tuple[ChatCompletionMessage, ...] = ()
     temperature: float = 0.1
     stream: bool = True
-    system_input: Optional[str] = None
     max_tokens: Optional[int] = None
-    disable_maxtoken_hint: bool = False
-    # The single source of api_key / base_url / model is this ApiConfig (falling
-    # back to env vars when absent). The resolved values are exposed as the
-    # ``api_key`` / ``base_url`` / ``model`` *attributes* (set in __post_init__),
-    # but they are NOT dataclass fields — so they don't duplicate the ApiConfig
-    # in ``asdict`` / serialised output.
+    stream_options: Optional[ChatCompletionStreamOptions] = None
+    thinking: Optional[ChatCompletionThinking] = None
+    chat_template_kwargs: Optional[dict[str, Any]] = None
+    enable_thinking: Optional[bool] = None
     api: Optional[ApiConfig] = None
     timeout: Optional[float] = None
+    system_input: Optional[str] = None
+    disable_maxtoken_hint: bool = False
 
     def __post_init__(self):
         api = self.api
@@ -173,11 +272,82 @@ class ModelSettings:
 
         # Frozen dataclass — write resolved values back in place (no `replace`,
         # which would recurse through __post_init__).
-        object.__setattr__(self, "api_key", api_key)
-        object.__setattr__(self, "base_url", base_url)
-        object.__setattr__(self, "model", model)
+        object.__setattr__(self, "api", ApiConfig(
+            base_url=base_url,
+            api_key=api_key,
+            model=model,
+            model_alias=api.model_alias if api else None,
+        ))
         object.__setattr__(self, "timeout", timeout)
-        # object.__setattr__(self, "max_tokens", max_tokens)
+
+    @property
+    def api_key(self) -> str:
+        return self.api.api_key
+
+    @property
+    def base_url(self) -> str:
+        return self.api.base_url
+
+    @property
+    def model(self) -> str:
+        return self.api.model
+
+    def with_user_input(
+            self,
+            *,
+            prompt: Union[str, list],
+            image_data_urls: Optional[Sequence[str]] = None,
+            disable_thinking: bool = False,
+    ) -> "ChatCompletionRequest":
+        messages: list[ChatCompletionMessage] = []
+        if self.system_input:
+            messages.append(ChatCompletionMessage(
+                role="system",
+                content=self.system_input,
+            ))
+        messages.append(ChatCompletionMessage(
+            role="user",
+            content=build_user_content(prompt, image_data_urls or ()),
+        ))
+        return replace(
+            self,
+            messages=tuple(messages),
+            stream_options=ChatCompletionStreamOptions() if self.stream else None,
+            thinking=(
+                ChatCompletionThinking(type="disabled")
+                if disable_thinking
+                else None
+            ),
+            chat_template_kwargs=(
+                {"enable_thinking": False}
+                if disable_thinking
+                else None
+            ),
+            enable_thinking=False if disable_thinking else None,
+        )
+
+    def to_dict(self) -> dict[str, Any]:
+        def to_json_value(value: Any) -> Any:
+            if isinstance(value, dict):
+                return {
+                    key: to_json_value(item)
+                    for key, item in value.items()
+                    if item is not None
+                }
+            if isinstance(value, (list, tuple)):
+                return [to_json_value(item) for item in value]
+            return value
+
+        payload = asdict(self)
+        for local_field in (
+            "api",
+            "timeout",
+            "system_input",
+            "disable_maxtoken_hint",
+        ):
+            payload.pop(local_field, None)
+        payload["model"] = self.model
+        return to_json_value(payload)
 
 
 def image_path_to_data_url(image_path: Any) -> str:
@@ -196,12 +366,12 @@ def image_path_to_data_url(image_path: Any) -> str:
 
 
 @dataclass(frozen=True)
-class LLMInferInput(object):
+class LLMInferInputRecord(object):
     # allow list
     prompt: Union[str, list]
     image_paths: Optional[Sequence[Any]] = None
     image_data_urls: Optional[Sequence[str]] = None
-    model_settings: Optional[ModelSettings] = None
+    model_settings: Optional[ChatCompletionRequest] = None
     # Full original input row (id + all extra CSV columns) carried through so
     # LLMInferOutput.to_dict() can produce a self-contained record without any
     # external dict merge.
@@ -212,7 +382,11 @@ class LLMInferInput(object):
     id: str = ""
 
     def __post_init__(self) -> None:
-        ms = (self.model_settings if self.model_settings is not None else ModelSettings())
+        ms = (
+            self.model_settings
+            if self.model_settings is not None
+            else ChatCompletionRequest()
+        )
 
         image_data_urls = [u.strip() for u in (self.image_data_urls or ()) if u.strip()]
         image_data_urls.extend(image_path_to_data_url(p) for p in (self.image_paths or ()))
@@ -236,7 +410,7 @@ class LLMInferInput(object):
         absent (a freshly-built instance), fall back to the live
         ``model_settings.model``. The order matters: loading passes
         ``model_settings=None``, so ``__post_init__`` fills in a *default*
-        ModelSettings whose ``.model`` would otherwise mask the real value.
+        ChatCompletionRequest whose ``.model`` would otherwise mask the real value.
         """
         # A direct ``model`` column in extra wins (e.g. openlearnlm records carry
         # the model name as a field rather than inside model_settings).
@@ -252,7 +426,7 @@ class LLMInferInput(object):
                 ms = None
         if isinstance(ms, dict):
             # model lives at the top level (legacy) or nested under ``api``
-            # (current ModelSettings serialises it inside the ApiConfig).
+            # (current ChatCompletionRequest serialises it inside the ApiConfig).
             m = ms.get("model") or (ms.get("api") or {}).get("model")
             if m:
                 return str(m)
@@ -264,10 +438,10 @@ class LLMInferInput(object):
     def from_dict(
         cls,
         row: Dict[str, Any],
-        model_settings: Optional["ModelSettings"] = None,
+        model_settings: Optional["ChatCompletionRequest"] = None,
         image_paths: Optional[Sequence[Any]] = None,
         image_data_urls: Optional[Sequence[str]] = None,
-    ) -> "LLMInferInput":
+    ) -> "LLMInferInputRecord":
         """Construct from a CSV row dict, validating required fields.
 
         Raises ``ValueError`` if any column in ``REQUIRED_INPUT_COLUMNS``
@@ -300,8 +474,8 @@ class LLMInferInput(object):
     def from_csv(
             cls,
             path: "str | Path",
-            model_settings: "Optional[ModelSettings]" = None,
-    ) -> "list[LLMInferInput]":
+            model_settings: "Optional[ChatCompletionRequest]" = None,
+    ) -> "list[LLMInferInputRecord]":
         """Load a CSV file and convert every row to an instance via ``from_dict``.
 
         NaN values (pandas missing cells) are normalised to ``None`` inside
@@ -317,8 +491,8 @@ class LLMInferInput(object):
     def from_jsonl(
             cls,
             path: "str | Path",
-            model_settings: "Optional[ModelSettings]" = None,
-    ) -> "list[LLMInferInput]":
+            model_settings: "Optional[ChatCompletionRequest]" = None,
+    ) -> "list[LLMInferInputRecord]":
         """Deserialise a JSONL file into a list of instances.
 
         Each non-empty line is parsed as JSON and forwarded to ``cls.from_dict``.
@@ -343,7 +517,7 @@ class LLMInferInput(object):
 
 
 @dataclass(frozen=True)
-class LLMInferOutput(LLMInferInput):
+class LLMInferResultRecord(LLMInferInputRecord):
     """Extends LLMInferInput with the model's response and runtime stats.
 
     Serialises to a self-contained dict (via ``to_dict``) that embeds
@@ -363,28 +537,40 @@ class LLMInferOutput(LLMInferInput):
     def from_dict(
             cls,
             row: Dict[str, Any],
-            model_settings: Optional["ModelSettings"] = None,
+            input_: Optional[LLMInferInputRecord] = None,
+            *,
+            model_settings: Optional["ChatCompletionRequest"] = None,
             image_paths: Optional[Sequence[Any]] = None,
             image_data_urls: Optional[Sequence[str]] = None,
-    ) -> "LLMInferOutput":
+    ) -> "LLMInferResultRecord":
         """Construct from a JSONL/CSV record dict, populating all output fields.
 
-        NaN values are normalised to ``None``.  ``model_settings`` embedded in
-        the record (written by ``to_dict``) is ignored in favour of the
-        explicitly supplied value so callers stay in control of the config.
+        ``input_`` is authoritative for input fields and request configuration;
+        ``row`` supplies the response and runtime fields. When ``input_`` is
+        omitted, one is built from ``row`` for inherited CSV/JSONL loaders.
         """
         import math
         sanitised: Dict[str, Any] = {
             k: (None if isinstance(v, float) and math.isnan(v) else v)
             for k, v in row.items()
         }
+        if input_ is None:
+            input_ = LLMInferInputRecord.from_dict(
+                sanitised,
+                model_settings=model_settings,
+                image_paths=image_paths,
+                image_data_urls=image_data_urls,
+            )
+        extra = dict(input_.extra)
+        extra.update(sanitised)
         return cls(
-            id                = str(sanitised.get("id", "")),
-            prompt            = str(sanitised.get("prompt", "") or ""),
-            model_settings    = model_settings,
-            image_paths       = image_paths,
-            image_data_urls   = image_data_urls,
-            extra             = sanitised,
+            id                = input_.id,
+            prompt            = input_.prompt,
+            model_settings    = input_.model_settings,
+            # image_data_urls on LLMInferInput are already normalised and
+            # include converted image_paths; do not convert paths a second time.
+            image_data_urls   = input_.image_data_urls,
+            extra             = extra,
             llm_response      = str(sanitised.get("llm_response", "") or ""),
             reasoning         = sanitised.get("reasoning") or None,
             prompt_tokens     = sanitised.get("prompt_tokens"),
@@ -414,7 +600,7 @@ class LLMInferOutput(LLMInferInput):
     @classmethod
     def to_csv(
             cls,
-            outputs: "list[Optional[LLMInferOutput]]",
+            outputs: "list[Optional[LLMInferResultRecord]]",
             fallback_rows: "list[Dict[str, Any]]",
             path: "str | Path",
     ) -> Path:
@@ -458,4 +644,3 @@ class LLMInferOutput(LLMInferInput):
         if p.is_dir():
             return p.parent / (p.name + "_batch_infer_" + model)
         return p.with_stem(p.stem + "_batch_infer_" + model)
-

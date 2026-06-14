@@ -16,11 +16,10 @@ from llm_common.llm_infer.api_info.dataclass_ import GEMINI_API
 from llm_common.llm_infer.api_info.dataclass_ import MODEL_TO_APICONFIG
 from llm_common.llm_infer.api_info.dataclass_ import apiconfig_for_model
 from llm_common.llm_infer.call_by_single_instance import call_openai
-from llm_common.llm_infer.instances import LLMInferInput
-from llm_common.llm_infer.instances import LLMInferOutput
-from llm_common.llm_infer.instances import ModelSettings
+from llm_common.llm_infer.instances import ChatCompletionRequest
+from llm_common.llm_infer.instances import LLMInferInputRecord
+from llm_common.llm_infer.instances import LLMInferResultRecord
 from llm_common.llm_infer.instances import load_system_input  # noqa: F401  re-exported
-from llm_common.llm_infer.instances import response_record_to_prompt_messages  # noqa: F401  re-exported
 from llm_common.llm_infer.test.data.index import LLM_INFER_TEST_SAMPLE_BATCH_PROMPT_CSV_PATH
 
 
@@ -34,7 +33,8 @@ from llm_common.llm_infer.test.data.index import LLM_INFER_TEST_SAMPLE_BATCH_PRO
 #   prompts.jsonl          one JSON object per processed row (append-only; the
 #                          resume log — re-running skips ids already present)
 #   prompts.csv            the same data as a table (input columns + llm_response)
-#   model_settings.json    asdict(ModelSettings) — notably `system_input`, which
+#   model_settings.json    asdict(ChatCompletionRequest) — notably
+#                          `system_input`, which
 #                          is the system prompt shared by every row (NOT stored
 #                          per-record, so reconstruct prompts via this sidecar)
 #
@@ -51,10 +51,10 @@ from llm_common.llm_infer.test.data.index import LLM_INFER_TEST_SAMPLE_BATCH_PRO
 # Output-only fields (LLMInferOutput minus LLMInferInput), computed once at
 # import time so the resume loop is never hardcoded.
 _INPUT_FIELD_NAMES: frozenset[str] = frozenset(
-    f.name for f in dc_fields(LLMInferInput)
+    f.name for f in dc_fields(LLMInferInputRecord)
 )
 _OUTPUT_ONLY_FIELDS = [
-    f for f in dc_fields(LLMInferOutput) if f.name not in _INPUT_FIELD_NAMES
+    f for f in dc_fields(LLMInferResultRecord) if f.name not in _INPUT_FIELD_NAMES
 ]
 
 
@@ -64,7 +64,7 @@ def get_llm_output_from_file(
         max_workers: int = 1,
         output_path: Optional[Path] = None,
 ) -> Path:
-    model_settings = ModelSettings(
+    model_settings = ChatCompletionRequest(
             api=apiconfig,
             max_tokens=12000,
             system_input='Reasoning effort should be low. Maxmium tokens for reasoning or thinking can not be more than 100 tokens.',
@@ -75,23 +75,23 @@ def get_llm_output_from_file(
     # columns, non-empty prompt) fires immediately for all rows before any LLM
     # calls are made.
     csv_path = Path(csv_path)
-    inputs: list[LLMInferInput] = LLMInferInput.from_csv(csv_path, model_settings=model_settings)
+    inputs: list[LLMInferInputRecord] = LLMInferInputRecord.from_csv(csv_path, model_settings=model_settings)
     # extra holds the NaN-sanitised original row; used as fallback in to_csv.
     rows: list[Dict[str, Any]] = [inp.extra for inp in inputs]
     ids = [inp.id for inp in inputs]
 
     if output_path is None:
-        output_path = LLMInferOutput.get_output_path_hint(csv_path, model_settings.model)
+        output_path = LLMInferResultRecord.get_output_path_hint(csv_path, model_settings.model)
 
     # One LLMInferOutput per row; None until the row is processed or resumed.
-    outputs: list[Optional[LLMInferOutput]] = [None] * len(inputs)
+    outputs: list[Optional[LLMInferResultRecord]] = [None] * len(inputs)
 
     output_jsonl_path = output_path.with_suffix(".jsonl")
 
     id_to_index = {row_id: i for i, row_id in enumerate(ids)}
     done_ids: set = set()
     if output_jsonl_path.exists():
-        for resumed in LLMInferOutput.from_jsonl(output_jsonl_path, model_settings=model_settings):
+        for resumed in LLMInferResultRecord.from_jsonl(output_jsonl_path, model_settings=model_settings):
             row_id = resumed.id
             if not row_id:
                 continue
@@ -112,7 +112,7 @@ def get_llm_output_from_file(
             jsonl_file.write(json.dumps(record, ensure_ascii=False) + "\n")
             jsonl_file.flush()
     # preserve original CSV row order (outputs[i] is indexed by input position)
-    LLMInferOutput.to_csv(outputs, rows, output_path)
+    LLMInferResultRecord.to_csv(outputs, rows, output_path)
     print(f"saved to {output_path}")
     return output_path
 
@@ -127,7 +127,7 @@ def get_llm_output_from_directory(
     Returns a list of output CSV paths (one per input file).
     """
     directory = Path(directory)
-    output_dir = LLMInferOutput.get_output_path_hint(directory, apiconfig.model)
+    output_dir = LLMInferResultRecord.get_output_path_hint(directory, apiconfig.model)
     results: list[Path] = []
     for csv_path in sorted(directory.glob("*.csv")):
         results.append(
@@ -162,7 +162,7 @@ def main():
 
     apiconfig = apiconfig_for_model(args.model)
     csv_path = Path(args.csv_path)
-    output_dir = LLMInferOutput.get_output_path_hint(csv_path.parent, apiconfig.model)
+    output_dir = LLMInferResultRecord.get_output_path_hint(csv_path.parent, apiconfig.model)
     output_dir.mkdir(parents=True, exist_ok=True)
     get_llm_output_from_file(
         csv_path=csv_path,

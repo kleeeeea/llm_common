@@ -198,7 +198,7 @@ def model_alias_for(model: str) -> str:
 
 
 def main():
-    from llm_common.llm_infer.call import call_openai
+    from llm_common.llm_infer.call_by_single_instance import call_openai
     text = call_openai(
         api_key=DEFAULT_1T_BASELINE_API.api_key,
         base_url=DEFAULT_1T_BASELINE_API.base_url,

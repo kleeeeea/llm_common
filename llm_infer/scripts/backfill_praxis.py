@@ -2,7 +2,7 @@ import json
 from pathlib import Path
 
 from llm_common.llm_infer.api_info.dataclass_ import DEFAULT_32B_OFFICIAL_API
-from llm_common.llm_infer.instances import LLMInferOutput
+from llm_common.llm_infer.instances import LLMInferResultRecord
 from llm_common.llm_infer.run import get_llm_output_from_file
 
 praxis_reading1_file = '/Users/l/klee_code/git_repos/llm_evals/parse_evaluation/praxis_reading_1/outputs/prompts.csv'
@@ -64,7 +64,7 @@ def backfill_praxis_main() -> list[Path]:
             DEFAULT_32B_INNOSPARK_API,
             DEFAULT_32B_OFFICIAL_API,
     ]:
-        output_path = LLMInferOutput.get_output_path_hint(praxis_reading1_file, modelapi.model)
+        output_path = LLMInferResultRecord.get_output_path_hint(praxis_reading1_file, modelapi.model)
         output_jsonl = Path(output_path).with_suffix(".jsonl")
 
         # Derive the backfill source dir from the model name.

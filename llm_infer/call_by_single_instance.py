@@ -1,9 +1,11 @@
 import json
 import os
+import subprocess
 import sys
 import time
 import urllib.error
 import urllib.request
+from dataclasses import dataclass
 from dataclasses import replace
 from typing import Any
 from typing import Dict
@@ -12,15 +14,19 @@ from typing import Sequence
 from typing import Union
 
 from llm_common.llm_infer.api_info.dataclass_ import ApiConfig
-from llm_common.llm_infer.instances import LLMInferInput
-from llm_common.llm_infer.instances import LLMInferOutput
-from llm_common.llm_infer.instances import ModelSettings
+from llm_common.llm_infer.instances import ChatCompletionContentPartImage
+from llm_common.llm_infer.instances import ChatCompletionContentPartText
+from llm_common.llm_infer.instances import ChatCompletionImageURL
+from llm_common.llm_infer.instances import ChatCompletionRequest
+from llm_common.llm_infer.instances import LLMInferInputRecord
+from llm_common.llm_infer.instances import LLMInferResultRecord
+from llm_common.llm_infer.instances import build_user_content
 from llm_common.llm_infer.load_env import ENV_FILE
 from llm_common.llm_infer.load_env import load_env_file
 from llm_common.llm_infer.load_env import require_env
 
 
-def stream_sse_lines(response):
+def _stream_sse_lines(response):
     buffer = ""
     while True:
         chunk = response.read(1024)
@@ -40,13 +46,48 @@ def stream_sse_lines(response):
 
 
 
-def build_chat_completions_url(base_url: str) -> str:
+def _build_chat_completions_url(base_url: str) -> str:
     base_url = base_url.strip().rstrip("/")
     if not base_url:
         raise ValueError("base_url is empty")
     if base_url.endswith("/chat/completions"):
         return base_url
     return f"{base_url}/chat/completions"
+
+
+def _check_server_health(base_url: str, api_key: str, timeout: float = 10.0) -> None:
+    """正式发流式请求前，先用 curl 探测远端服务器是否可达，失败则快速报错。
+
+    打到 OpenAI 兼容的 /models 端点：
+      - 2xx：服务正常；
+      - 4xx：服务在线但鉴权/路径有差异（仍视为可达，放行）；
+      - 其它（连不上、超时、5xx、curl 本身报错）：抛异常，避免请求发到一半才挂。
+    """
+    base = base_url.strip().rstrip("/")
+    if base.endswith("/chat/completions"):
+        base = base[: -len("/chat/completions")]
+    models_url = f"{base}/models"
+    cmd = [
+        "curl", "-sS",
+        "-o", os.devnull,            # 丢弃响应体，只看状态码
+        "-w", "%{http_code}",
+        "--max-time", str(timeout),
+        "-H", f"Authorization: Bearer {api_key}",
+        models_url,
+    ]
+    try:
+        result = subprocess.run(
+            cmd, capture_output=True, text=True, timeout=timeout + 5
+        )
+    except (subprocess.SubprocessError, OSError) as error:
+        raise Exception(f"remote server health check failed (curl 无法执行: {error})")
+    code = (result.stdout or "").strip()
+    print(f"health check: GET {models_url} -> {code or '(no http_code)'}")
+    if not code.startswith(("2", "4")):
+        stderr = (result.stderr or "").strip()[:200]
+        raise Exception(
+            f"remote server health check failed (http_code={code!r}, stderr={stderr!r})"
+        )
 
 
 def normalize_text_content(content: Any) -> str:
@@ -65,47 +106,123 @@ def normalize_text_content(content: Any) -> str:
     return ""
 
 
-def extract_stream_text(payload: dict[str, Any]) -> str:
-    choices = payload.get("choices")
-    if isinstance(choices, list) and choices:
-        first = choices[0] if isinstance(choices[0], dict) else {}
-        delta = first.get("delta") or {}
-        if isinstance(delta, dict):
-            text = normalize_text_content(delta.get("content"))
-            if text:
-                return text
-        message = first.get("message") or {}
-        if isinstance(message, dict):
-            text = normalize_text_content(message.get("content"))
-            if text:
-                return text
-    return normalize_text_content(payload.get("content"))
+@dataclass(frozen=True)
+class ChatCompletionChunkDelta:
+    """Source: OpenAI Chat Completions streaming choice `delta`.
+
+    https://developers.openai.com/api/reference/resources/chat/subresources/completions/methods/create
+
+    `reasoning_content` is an OpenAI-compatible server extension.
+    """
+
+    content: Any = None
+    role: Optional[str] = None
+    reasoning_content: Any = None
+
+    @classmethod
+    def from_dict(cls, value: Any) -> "ChatCompletionChunkDelta":
+        value = value if isinstance(value, dict) else {}
+        return cls(
+            content=value.get("content"),
+            role=value.get("role") if isinstance(value.get("role"), str) else None,
+            reasoning_content=value.get("reasoning_content"),
+        )
+
+
+@dataclass(frozen=True)
+class ChatCompletionChunkChoice:
+    """Source: OpenAI Chat Completions streaming `choices` item.
+
+    https://developers.openai.com/api/reference/resources/chat/subresources/completions/methods/create
+
+    `message` is retained as a compatibility fallback for servers that return
+    a non-streaming message inside a streamed response.
+    """
+
+    index: int = 0
+    delta: ChatCompletionChunkDelta = ChatCompletionChunkDelta()
+    finish_reason: Optional[str] = None
+    message: ChatCompletionChunkDelta = ChatCompletionChunkDelta()
+
+    @classmethod
+    def from_dict(cls, value: Any) -> "ChatCompletionChunkChoice":
+        value = value if isinstance(value, dict) else {}
+        index = value.get("index")
+        return cls(
+            index=index if isinstance(index, int) else 0,
+            delta=ChatCompletionChunkDelta.from_dict(value.get("delta")),
+            finish_reason=(
+                value.get("finish_reason")
+                if isinstance(value.get("finish_reason"), str)
+                else None
+            ),
+            message=ChatCompletionChunkDelta.from_dict(value.get("message")),
+        )
+
+
+@dataclass(frozen=True)
+class ChatCompletionChunk:
+    """Source: OpenAI Chat Completions streamed response chunk.
+
+    https://developers.openai.com/api/reference/resources/chat/subresources/completions/methods/create
+
+    Top-level `content` and `reasoning_content` are compatibility extensions.
+    """
+
+    choices: tuple[ChatCompletionChunkChoice, ...] = ()
+    content: Any = None
+    reasoning_content: Any = None
+
+    @classmethod
+    def from_dict(cls, value: Any) -> "ChatCompletionChunk":
+        value = value if isinstance(value, dict) else {}
+        choices = value.get("choices")
+        return cls(
+            choices=tuple(
+                ChatCompletionChunkChoice.from_dict(choice)
+                for choice in choices
+                if isinstance(choice, dict)
+            ) if isinstance(choices, list) else (),
+            content=value.get("content"),
+            reasoning_content=value.get("reasoning_content"),
+        )
+
+
+def _extract_stream_text(payload: dict[str, Any]) -> str:
+    chunk = ChatCompletionChunk.from_dict(payload)
+    if chunk.choices:
+        first = chunk.choices[0]
+        text = normalize_text_content(first.delta.content)
+        if text:
+            return text
+        text = normalize_text_content(first.message.content)
+        if text:
+            return text
+    return normalize_text_content(chunk.content)
 
 
 def extract_stream_reasoning_text(payload: dict[str, Any]) -> str:
-    choices = payload.get("choices")
-    if isinstance(choices, list) and choices:
-        first = choices[0] if isinstance(choices[0], dict) else {}
-        delta = first.get("delta") or {}
-        if isinstance(delta, dict):
-            text = normalize_text_content(delta.get("reasoning_content"))
-            if text:
-                return text
-        message = first.get("message") or {}
-        if isinstance(message, dict):
-            text = normalize_text_content(message.get("reasoning_content"))
-            if text:
-                return text
-    return normalize_text_content(payload.get("reasoning_content"))
+    chunk = ChatCompletionChunk.from_dict(payload)
+    if chunk.choices:
+        first = chunk.choices[0]
+        text = normalize_text_content(first.delta.reasoning_content)
+        if text:
+            return text
+        text = normalize_text_content(first.message.reasoning_content)
+        if text:
+            return text
+    return normalize_text_content(chunk.reasoning_content)
 
 
-def build_user_content(prompt: str, image_data_urls: Sequence[str]) -> Any:
-    if not image_data_urls:
-        return prompt
-    content: list[dict[str, Any]] = [{"type": "text", "text": prompt}]
-    for image_data_url in image_data_urls:
-        content.append({"type": "image_url", "image_url": {"url": image_data_url}})
-    return content
+def _build_chat_completion_request(
+        input_: LLMInferInputRecord,
+        disable_thinking: bool = False,
+) -> ChatCompletionRequest:
+    return input_.model_settings.with_user_input(
+        prompt=input_.prompt,
+        image_data_urls=input_.image_data_urls,
+        disable_thinking=disable_thinking,
+    )
 
 
 
@@ -129,21 +246,21 @@ def main() -> int:
     return 0
 
 def call_openai(
-        input_: Optional[LLMInferInput]=None,
+        input_: Optional[LLMInferInputRecord]=None,
         api_config: Optional[ApiConfig]=None,
         api_key: str=None, base_url: str=None, max_tokens: int=None,
         model: str=None, prompt: Union[str,list]=None,
         system_input: str=None, image_paths: Optional[Sequence[Any]]=None,
         image_data_urls: Optional[Sequence[str]]=None, timeout: float=None,
         do_print_one_response_per_line=None, disable_maxtoken_hint=None,
-        model_settings: Optional[ModelSettings]=None,
-        disable_thinking=None,) -> LLMInferOutput:
+        model_settings: Optional[ChatCompletionRequest]=None,
+        disable_thinking=None,) -> LLMInferResultRecord:
     if input_ is None:
         if model_settings is None:
-            model_settings = ModelSettings()
-        # api_key / base_url / model are no longer standalone ModelSettings
+            model_settings = ChatCompletionRequest()
+        # api_key / base_url / model are no longer standalone request settings
         # fields — fold any explicit overrides (direct kwargs or api_config)
-        # into the ModelSettings' ApiConfig instead.
+        # into the ChatCompletionRequest's ApiConfig instead.
         cur = model_settings.api
         ovr_key   = api_key  or (api_config.api_key  if api_config else None)
         ovr_url   = base_url or (api_config.base_url if api_config else None)
@@ -162,47 +279,26 @@ def call_openai(
                                  system_input=model_settings.system_input or system_input,
                                  max_tokens=model_settings.max_tokens or max_tokens,
                                  disable_maxtoken_hint=model_settings.disable_maxtoken_hint or bool(disable_maxtoken_hint))
-        input_ = LLMInferInput(
+        input_ = LLMInferInputRecord(
                 prompt=prompt,
                 image_paths=image_paths,
                 image_data_urls=image_data_urls,
                 model_settings=model_settings,
         )
     ms = input_.model_settings
-    body = {
-            "model"      : ms.api. model,
-            "thinking"   : ms.thinking,
-            "temperature": ms.temperature,
-            "stream"     : ms.stream,
-            # ask OpenAI-compatible servers to emit a final usage-only chunk
-            # (choices=[], usage={...}) at the end of the stream.
-            "stream_options": {"include_usage": True},
-            "max_tokens" : ms.max_tokens,
-            "messages"   : (
-                    [
-                    {"role": "system", "content": ms.system_input},
-            ] if ms.system_input else []
-                           ) + [
-                    {"role": "user", "content": build_user_content(input_.prompt, input_.image_data_urls)},
-
-            ],
-
-    }
-    if disable_thinking:
-        # 实现
-        body["thinking"] = {"type": "disabled"}
-        body["chat_template_kwargs"] = {
-            **body.get("chat_template_kwargs", {}),
-            "enable_thinking": False,
-        }
-        body["enable_thinking"] = False
-        body.pop("reasoning_effort", None)
+    body = _build_chat_completion_request(
+        input_,
+        disable_thinking=bool(disable_thinking),
+    ).to_dict()
 
 
     print('*' * 50 + f'''\n{ms.system_input}\n^^^(ms.system_input)^^^\n''' + '''\nat:\nllm_common/llm_infer/call.py:242\n''' + '*' * 50)
     print('*' * 50 + f'''\n{input_.prompt}\n^^^(input_.prompt)^^^\n''' + '''\nat:\nllm_common/llm_infer/call.py:243\n''' + '*' * 50)
 
-    url = build_chat_completions_url(ms.api. base_url)
+    # first test remote server healthiness using curl
+    _check_server_health(ms.api.base_url, ms.api.api_key, timeout=min(ms.timeout or 10.0, 10.0))
+
+    url = _build_chat_completions_url(ms.api. base_url)
     request = urllib.request.Request(
             url,
             data=json.dumps(body, ensure_ascii=False).encode("utf-8"),
@@ -242,7 +338,7 @@ def call_openai(
                 print(raw[:4000], file=sys.stderr)
                 raise Exception('llm error')
 
-            for payload in stream_sse_lines(response):
+            for payload in _stream_sse_lines(response):
                 if not payload or payload == "[DONE]":
                     continue
                 try:
@@ -253,7 +349,7 @@ def call_openai(
                 # carries token counts; keep the last non-null one.
                 if isinstance(data, dict) and data.get("usage"):
                     usage = data["usage"]
-                text = extract_stream_text(data)
+                text = _extract_stream_text(data)
                 reasoning_text = extract_stream_reasoning_text(data)
                 all_payloads.append(payload)
                 if reasoning_text:
@@ -284,18 +380,14 @@ def call_openai(
         raise Exception('llm error')
     reasoning = "".join(reasoning_chunks).strip() or None
     print()
-    return LLMInferOutput(
-        prompt=input_.prompt,
-        image_data_urls=input_.image_data_urls,
-        model_settings=input_.model_settings,
-        extra=input_.extra,
-        llm_response=text,
-        reasoning=reasoning,
-        prompt_tokens=(usage or {}).get("prompt_tokens"),
-        completion_tokens=(usage or {}).get("completion_tokens"),
-        total_tokens=(usage or {}).get("total_tokens"),
-        latency_ms=(time.perf_counter() - _t0) * 1000.0,
-    )
+    return LLMInferResultRecord.from_dict({
+        "llm_response": text,
+        "reasoning": reasoning,
+        "prompt_tokens": (usage or {}).get("prompt_tokens"),
+        "completion_tokens": (usage or {}).get("completion_tokens"),
+        "total_tokens": (usage or {}).get("total_tokens"),
+        "latency_ms": (time.perf_counter() - _t0) * 1000.0,
+    }, input_=input_)
 
 
 if __name__ == "__main__":

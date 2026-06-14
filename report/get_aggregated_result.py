@@ -739,7 +739,7 @@ def generate_model_settings_table(
         k = key.lower()
         return "api_key" in k or k == "key" or k.endswith("_key")
 
-    # ModelSettings.__post_init__ mirrors the ApiConfig (``api.base_url`` /
+    # ChatCompletionRequest.__post_init__ mirrors the ApiConfig (``api.base_url`` /
     # ``api.api_key`` / ``api.model``) up to top-level fields, so those values
     # appear twice. Dedupe by leaf name + value: the first occurrence wins.
     rows: list[tuple[str, str]] = []
