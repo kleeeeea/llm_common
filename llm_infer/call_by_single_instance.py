@@ -1,17 +1,15 @@
 import json
 import os
+import shlex
 import subprocess
 import sys
 import time
 import urllib.error
 import urllib.request
 from dataclasses import dataclass
-from dataclasses import replace
 from typing import Any
 from typing import Dict
 from typing import Optional
-from typing import Sequence
-from typing import Union
 
 from llm_common.llm_infer.api_info.dataclass_ import ApiConfig
 from llm_common.llm_infer.instances import ChatCompletionContentPartImage
@@ -85,8 +83,21 @@ def _check_server_health(base_url: str, api_key: str, timeout: float = 10.0) -> 
     print(f"health check: GET {models_url} -> {code or '(no http_code)'}")
     if not code.startswith(("2", "4")):
         stderr = (result.stderr or "").strip()[:200]
+        check_command = (
+            "curl -sS -o /dev/null -w '%{http_code}\\n' "
+            f"--max-time {shlex.quote(str(timeout))} "
+            '-H "Authorization: Bearer $LLM_API_KEY" '
+            f"{shlex.quote(models_url)}"
+        )
+        print(
+            "health check failed; reproduce with:\n"
+            f"export LLM_API_KEY='<your-api-key>'\n{check_command}",
+            file=sys.stderr,
+        )
         raise Exception(
-            f"remote server health check failed (http_code={code!r}, stderr={stderr!r})"
+            "remote server health check failed "
+            f"(http_code={code!r}, stderr={stderr!r}); "
+            f"check_command={check_command!r}"
         )
 
 
@@ -104,6 +115,19 @@ def normalize_text_content(content: Any) -> str:
                     texts.append(text)
         return "".join(texts)
     return ""
+
+
+def _build_mock_response(prompt: Any) -> str:
+    if isinstance(prompt, list):
+        return next(
+            (
+                "mock response with prompt: " + part.get("text", "")
+                for part in prompt
+                if isinstance(part, dict) and part.get("type") == "text"
+            ),
+            "",
+        )
+    return "mock response with prompt: " + str(prompt)
 
 
 @dataclass(frozen=True)
@@ -216,13 +240,22 @@ def extract_stream_reasoning_text(payload: dict[str, Any]) -> str:
 
 def _build_chat_completion_request(
         input_: LLMInferInputRecord,
-        disable_thinking: bool = False,
 ) -> ChatCompletionRequest:
-    return input_.model_settings.with_user_input(
-        prompt=input_.prompt,
-        image_data_urls=input_.image_data_urls,
-        disable_thinking=disable_thinking,
-    )
+    return input_.chat_completion_request
+
+
+def _build_chat_completion_payload(
+        input_: LLMInferInputRecord,
+        disable_thinking: bool = False,
+) -> dict[str, Any]:
+    payload = _build_chat_completion_request(input_).to_dict()
+    if disable_thinking:
+        # OpenAI-compatible server extensions; deliberately outside
+        # ChatCompletionRequest because they are not OpenAI schema fields.
+        payload["thinking"] = {"type": "disabled"}
+        payload["chat_template_kwargs"] = {"enable_thinking": False}
+        payload["enable_thinking"] = False
+    return payload
 
 
 
@@ -238,78 +271,64 @@ def main() -> int:
     timeout = float(os.environ.get("TIMEOUT_SECONDS", "60"))
     max_tokens = int(os.environ.get("MAX_TOKENS", "16000"))
 
-    text = call_openai(api_key=api_key, base_url=base_url, max_tokens=max_tokens, model=model, prompt=prompt, timeout=timeout,
-                       system_input="You're a helpful assistant")
+    text = call_openai(LLMInferInputRecord(
+        prompt=prompt,
+        system_input="You're a helpful assistant",
+        api=ApiConfig(base_url=base_url, api_key=api_key, model=model),
+        chat_completion_request=ChatCompletionRequest(
+            model=model,
+            max_tokens=max_tokens,
+        ),
+        timeout=timeout,
+    ))
 
     print("\nOK: stream returned content.")
     print(text)
     return 0
 
 def call_openai(
-        input_: Optional[LLMInferInputRecord]=None,
-        api_config: Optional[ApiConfig]=None,
-        api_key: str=None, base_url: str=None, max_tokens: int=None,
-        model: str=None, prompt: Union[str,list]=None,
-        system_input: str=None, image_paths: Optional[Sequence[Any]]=None,
-        image_data_urls: Optional[Sequence[str]]=None, timeout: float=None,
-        do_print_one_response_per_line=None, disable_maxtoken_hint=None,
-        model_settings: Optional[ChatCompletionRequest]=None,
-        disable_thinking=None,) -> LLMInferResultRecord:
-    if input_ is None:
-        if model_settings is None:
-            model_settings = ChatCompletionRequest()
-        # api_key / base_url / model are no longer standalone request settings
-        # fields — fold any explicit overrides (direct kwargs or api_config)
-        # into the ChatCompletionRequest's ApiConfig instead.
-        cur = model_settings.api
-        ovr_key   = api_key  or (api_config.api_key  if api_config else None)
-        ovr_url   = base_url or (api_config.base_url if api_config else None)
-        ovr_model = model    or (api_config.model    if api_config else None)
-        if cur is not None or ovr_key or ovr_url or ovr_model:
-            merged_api = ApiConfig(
-                base_url=ovr_url   or (cur.base_url if cur else "") or "",
-                api_key =ovr_key   or (cur.api_key  if cur else "") or "",
-                model   =ovr_model or (cur.model    if cur else "") or "",
-            )
-        else:
-            merged_api = None
-        model_settings = replace(model_settings,
-                                 api=merged_api,
-                                 timeout=model_settings.timeout or timeout,
-                                 system_input=model_settings.system_input or system_input,
-                                 max_tokens=model_settings.max_tokens or max_tokens,
-                                 disable_maxtoken_hint=model_settings.disable_maxtoken_hint or bool(disable_maxtoken_hint))
-        input_ = LLMInferInputRecord(
-                prompt=prompt,
-                image_paths=image_paths,
-                image_data_urls=image_data_urls,
-                model_settings=model_settings,
+        input_: LLMInferInputRecord,
+) -> LLMInferResultRecord:
+    if input_.model == "mock":
+        return LLMInferResultRecord(
+            id=input_.id,
+            prompt=input_.prompt,
+            image_data_urls=input_.image_data_urls,
+            chat_completion_request=input_.chat_completion_request,
+            api=input_.api,
+            timeout=input_.timeout,
+            disable_thinking=input_.disable_thinking,
+            disable_maxtoken_hint=input_.disable_maxtoken_hint,
+            do_print_one_response_per_line=input_.do_print_one_response_per_line,
+            extra=input_.extra,
+            system_input=input_.system_input,
+            llm_response=_build_mock_response(input_.prompt),
+            reasoning=None,
+            latency_ms=0.0,
         )
-    ms = input_.model_settings
-    body = _build_chat_completion_request(
+
+    body = _build_chat_completion_payload(
         input_,
-        disable_thinking=bool(disable_thinking),
-    ).to_dict()
+        disable_thinking=input_.disable_thinking,
+    )
 
-
-    print('*' * 50 + f'''\n{ms.system_input}\n^^^(ms.system_input)^^^\n''' + '''\nat:\nllm_common/llm_infer/call.py:242\n''' + '*' * 50)
+    print('*' * 50 + f'''\n{input_.system_input}\n^^^(input_.system_input)^^^\n''' + '''\nat:\nllm_common/llm_infer/call.py:242\n''' + '*' * 50)
     print('*' * 50 + f'''\n{input_.prompt}\n^^^(input_.prompt)^^^\n''' + '''\nat:\nllm_common/llm_infer/call.py:243\n''' + '*' * 50)
 
     # first test remote server healthiness using curl
-    _check_server_health(ms.api.base_url, ms.api.api_key, timeout=min(ms.timeout or 10.0, 10.0))
+    _check_server_health(input_.api.base_url, input_.api.api_key, timeout=min(input_.timeout or 10.0, 10.0))
 
-    url = _build_chat_completions_url(ms.api. base_url)
+    # support simple non streaming option, just merge in scripts/inference/models.py:289
     request = urllib.request.Request(
-            url,
+            _build_chat_completions_url(input_.api.base_url),
             data=json.dumps(body, ensure_ascii=False).encode("utf-8"),
             headers={
-                    "Authorization": f"Bearer {ms.api. api_key}",
+                    "Authorization": f"Bearer {input_.api.api_key}",
                     "Content-Type" : "application/json",
             },
             method="POST",
     )
 
-    print(f"POST {url}")
 
     chunks: list[str] = []
     reasoning_chunks: list[str] = []
@@ -329,43 +348,53 @@ def call_openai(
     #  '{"id":"8fe1630f301c48a3bf7c4600cd5b17bc","object":"chat.completion.chunk","created":1779609667,"model":"Kimi-K2.6","choices":[{"index":0,"delta":{"role":null,"content":null,"reasoning_content":"100","tool_calls":null},"logprobs":null,"finish_reason":null,"matched_stop":null}],"usage":null}',
     # 需要收集推理模型的输入
     try:
-        with urllib.request.urlopen(request, timeout=ms.timeout) as response:
+        with urllib.request.urlopen(request, timeout=input_.timeout) as response:
             content_type = response.headers.get("content-type", "")
             print(f"HTTP {response.status} content-type={content_type}")
-            if "text/event-stream" not in content_type:
-                raw = response.read().decode("utf-8", errors="replace")
-                print("ERROR: response is not text/event-stream", file=sys.stderr)
-                print(raw[:4000], file=sys.stderr)
-                raise Exception('llm error')
 
-            for payload in _stream_sse_lines(response):
-                if not payload or payload == "[DONE]":
-                    continue
-                try:
-                    data = json.loads(payload)
-                except json.JSONDecodeError:
-                    continue
-                # the usage-only trailer chunk (and some servers on every chunk)
-                # carries token counts; keep the last non-null one.
-                if isinstance(data, dict) and data.get("usage"):
+            def collect_response_data(data: dict[str, Any], raw: str) -> None:
+                nonlocal usage
+                if data.get("usage"):
                     usage = data["usage"]
                 text = _extract_stream_text(data)
                 reasoning_text = extract_stream_reasoning_text(data)
-                all_payloads.append(payload)
+                all_payloads.append(raw)
                 if reasoning_text:
                     reasoning_chunks.append(reasoning_text)
-                    if do_print_one_response_per_line:
+                    if input_.do_print_one_response_per_line:
                         print(f"reasoning_chunk {reasoning_text}", flush=True)
                         print('-' * 30)
                     else:
                         print(f"\033[31m{reasoning_text}\033[0m", end='', flush=True)
                 if text:
                     chunks.append(text)
-                    if do_print_one_response_per_line:
+                    if input_.do_print_one_response_per_line:
                         print(f"chunk {text}", flush=True)
                         print('=' * 30)
                     else:
-                        print(text, end='', flush=True)
+                        print(f"\033[32m{text}\033[0m", end='', flush=True)
+
+            if "text/event-stream" in content_type:
+                for payload in _stream_sse_lines(response):
+                    if not payload or payload == "[DONE]":
+                        continue
+                    try:
+                        data = json.loads(payload)
+                    except json.JSONDecodeError:
+                        continue
+                    if isinstance(data, dict):
+                        collect_response_data(data, payload)
+            else:
+                raw = response.read().decode("utf-8", errors="replace")
+                try:
+                    data = json.loads(raw)
+                except json.JSONDecodeError as error:
+                    print("ERROR: response is not valid JSON", file=sys.stderr)
+                    print(raw[:4000], file=sys.stderr)
+                    raise Exception("llm error") from error
+                if not isinstance(data, dict):
+                    raise Exception("llm error")
+                collect_response_data(data, raw)
     except urllib.error.HTTPError as error:
         print(f"HTTP {error.code}", file=sys.stderr)
         print(error.read().decode("utf-8", errors="replace")[:4000], file=sys.stderr)

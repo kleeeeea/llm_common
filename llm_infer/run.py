@@ -33,7 +33,7 @@ from llm_common.llm_infer.test.data.index import LLM_INFER_TEST_SAMPLE_BATCH_PRO
 #   prompts.jsonl          one JSON object per processed row (append-only; the
 #                          resume log — re-running skips ids already present)
 #   prompts.csv            the same data as a table (input columns + llm_response)
-#   model_settings.json    asdict(ChatCompletionRequest) — notably
+#   model_settings.json    legacy settings sidecar — notably
 #                          `system_input`, which
 #                          is the system prompt shared by every row (NOT stored
 #                          per-record, so reconstruct prompts via this sidecar)
@@ -64,24 +64,38 @@ def get_llm_output_from_file(
         max_workers: int = 1,
         output_path: Optional[Path] = None,
 ) -> Path:
-    model_settings = ChatCompletionRequest(
-            api=apiconfig,
+    request = ChatCompletionRequest(
+            model=apiconfig.model,
             max_tokens=12000,
-            system_input='Reasoning effort should be low. Maxmium tokens for reasoning or thinking can not be more than 100 tokens.',
-            disable_maxtoken_hint=1,
+    )
+    system_input = (
+        "Reasoning effort should be low. Maxmium tokens for reasoning or "
+        "thinking can not be more than 100 tokens."
     )
 
     # Convert every row to LLMInferInput up-front: schema validation (required
     # columns, non-empty prompt) fires immediately for all rows before any LLM
     # calls are made.
     csv_path = Path(csv_path)
-    inputs: list[LLMInferInputRecord] = LLMInferInputRecord.from_csv(csv_path, model_settings=model_settings)
+    inputs: list[LLMInferInputRecord] = LLMInferInputRecord.from_csv(
+        csv_path,
+        chat_completion_request=request,
+        api=apiconfig,
+    )
+    inputs = [
+        dataclasses.replace(
+            item,
+            system_input=system_input,
+            disable_maxtoken_hint=True,
+        )
+        for item in inputs
+    ]
     # extra holds the NaN-sanitised original row; used as fallback in to_csv.
     rows: list[Dict[str, Any]] = [inp.extra for inp in inputs]
     ids = [inp.id for inp in inputs]
 
     if output_path is None:
-        output_path = LLMInferResultRecord.get_output_path_hint(csv_path, model_settings.model)
+        output_path = LLMInferResultRecord.get_output_path_hint(csv_path, request.model)
 
     # One LLMInferOutput per row; None until the row is processed or resumed.
     outputs: list[Optional[LLMInferResultRecord]] = [None] * len(inputs)
@@ -91,7 +105,10 @@ def get_llm_output_from_file(
     id_to_index = {row_id: i for i, row_id in enumerate(ids)}
     done_ids: set = set()
     if output_jsonl_path.exists():
-        for resumed in LLMInferResultRecord.from_jsonl(output_jsonl_path, model_settings=model_settings):
+        for resumed in LLMInferResultRecord.from_jsonl(
+                output_jsonl_path,
+                chat_completion_request=request,
+                api=apiconfig):
             row_id = resumed.id
             if not row_id:
                 continue

@@ -118,14 +118,25 @@ class LLMInferPerRowReport(LLMInferResultRecord):
         return d
 
     @classmethod
-    def from_dict(cls, row, model_settings=None, image_paths=None, image_data_urls=None):
+    def from_dict(
+            cls,
+            row,
+            chat_completion_request=None,
+            api=None,
+            timeout=None,
+            image_paths=None,
+            image_data_urls=None,
+    ):
         """Round-trip a scored CSV/JSONL record, restoring gold/pred/correct.
 
         Layers the scoring columns on top of ``LLMInferOutput.from_dict`` so the
         inherited ``from_csv`` / ``from_jsonl`` produce fully-typed reports.
         """
         base = LLMInferResultRecord.from_dict(
-            row, model_settings=model_settings,
+            row,
+            chat_completion_request=chat_completion_request,
+            api=api,
+            timeout=timeout,
             image_paths=image_paths, image_data_urls=image_data_urls,
         )
         e = base.extra  # already NaN-sanitised by LLMInferOutput.from_dict

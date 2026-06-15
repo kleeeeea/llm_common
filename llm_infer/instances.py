@@ -5,7 +5,6 @@ import sys
 from dataclasses import asdict
 from dataclasses import dataclass
 from dataclasses import field
-from dataclasses import replace
 from pathlib import Path
 from typing import Any
 from typing import Dict
@@ -111,6 +110,9 @@ def load_system_input(output_dir: str | Path) -> str:
                 if not raw_line:
                     continue
                 record = json.loads(raw_line)
+                direct_value = str(record.get("system_input") or "")
+                if direct_value:
+                    return direct_value
                 ms = record.get("model_settings")
                 if isinstance(ms, dict):
                     value = str(ms.get("system_input") or "")
@@ -212,119 +214,19 @@ class ChatCompletionStreamOptions:
 
 
 @dataclass(frozen=True)
-class ChatCompletionThinking:
-    """Anthropic-compatible extension; not an OpenAI standard field.
-
-    https://docs.anthropic.com/en/api/messages
-    """
-
-    type: str
-
-
-@dataclass(frozen=True)
 class ChatCompletionRequest:
-    """OpenAI Chat Completions request plus local transport metadata.
+    """OpenAI Chat Completions request schema.
 
     Source:
     https://developers.openai.com/api/reference/resources/chat/subresources/completions/methods/create
-
-    ``api``, ``timeout``, ``system_input``, and ``disable_maxtoken_hint`` are
-    local runtime metadata and are excluded from :meth:`to_dict`.
     """
 
+    model: str = ""
     messages: tuple[ChatCompletionMessage, ...] = ()
     temperature: float = 0.1
     stream: bool = True
     max_tokens: Optional[int] = None
     stream_options: Optional[ChatCompletionStreamOptions] = None
-    thinking: Optional[ChatCompletionThinking] = None
-    chat_template_kwargs: Optional[dict[str, Any]] = None
-    enable_thinking: Optional[bool] = None
-    api: Optional[ApiConfig] = None
-    timeout: Optional[float] = None
-    system_input: Optional[str] = None
-    disable_maxtoken_hint: bool = False
-
-    def __post_init__(self):
-        api = self.api
-        local_env = read_env_file(ENV_FILE)
-        local_env.update(os.environ)
-        api_key = ((api.api_key if api else None) or local_env.get("LLM_API_KEY", "")).strip()
-        base_url = ((api.base_url if api else None) or local_env.get("LLM_BASE_URL", api_innospark_cn_v_)).strip().rstrip("/")
-        model = ((api.model if api else None) or local_env.get("LLM_MODEL", "gemini-2.5-flash")).strip() or "gemini-2.5-flash"
-        timeout = self.timeout if self.timeout is not None else float(local_env.get("TIMEOUT_SECONDS", "60"))
-        require_positive_number("timeout", timeout)
-        is_local = any(h in base_url for h in ("localhost", "127.0.0.1", "0.0.0.0"))
-        if not api_key and not is_local:
-            print(f"ERROR: LLM_API_KEY is empty. Set it in {ENV_FILE} or export LLM_API_KEY.", file=sys.stderr)
-            sys.exit(2)
-        # max_tokens = self.max_tokens if self.max_tokens is not None else int(local_env.get("MAX_TOKENS", "12000"))
-        # require_positive_number("max_tokens", max_tokens)
-        # system_input = (self.system_input or local_env.get("SYSTEM_INPUT", "你是测试助手。回答必须按照字数要求。")).strip()
-        # Idempotent: `replace()` (used in call_openai) re-runs __post_init__, so
-        # only append the hint if it isn't already present.
-        hint_marker = "Total token budget including reasoning is:"
-        if self.max_tokens is not None and self.system_input is not None and (
-                not self.disable_maxtoken_hint and hint_marker not in self.system_input):
-            system_input=self.system_input
-            system_input += f"\n{hint_marker} {self.max_tokens}. Reasoning budget can not be more than {int(self.max_tokens * 0.8)} tokens"
-            object.__setattr__(self, "system_input", system_input)
-
-        # Frozen dataclass — write resolved values back in place (no `replace`,
-        # which would recurse through __post_init__).
-        object.__setattr__(self, "api", ApiConfig(
-            base_url=base_url,
-            api_key=api_key,
-            model=model,
-            model_alias=api.model_alias if api else None,
-        ))
-        object.__setattr__(self, "timeout", timeout)
-
-    @property
-    def api_key(self) -> str:
-        return self.api.api_key
-
-    @property
-    def base_url(self) -> str:
-        return self.api.base_url
-
-    @property
-    def model(self) -> str:
-        return self.api.model
-
-    def with_user_input(
-            self,
-            *,
-            prompt: Union[str, list],
-            image_data_urls: Optional[Sequence[str]] = None,
-            disable_thinking: bool = False,
-    ) -> "ChatCompletionRequest":
-        messages: list[ChatCompletionMessage] = []
-        if self.system_input:
-            messages.append(ChatCompletionMessage(
-                role="system",
-                content=self.system_input,
-            ))
-        messages.append(ChatCompletionMessage(
-            role="user",
-            content=build_user_content(prompt, image_data_urls or ()),
-        ))
-        return replace(
-            self,
-            messages=tuple(messages),
-            stream_options=ChatCompletionStreamOptions() if self.stream else None,
-            thinking=(
-                ChatCompletionThinking(type="disabled")
-                if disable_thinking
-                else None
-            ),
-            chat_template_kwargs=(
-                {"enable_thinking": False}
-                if disable_thinking
-                else None
-            ),
-            enable_thinking=False if disable_thinking else None,
-        )
 
     def to_dict(self) -> dict[str, Any]:
         def to_json_value(value: Any) -> Any:
@@ -338,17 +240,33 @@ class ChatCompletionRequest:
                 return [to_json_value(item) for item in value]
             return value
 
-        payload = asdict(self)
-        for local_field in (
-            "api",
-            "timeout",
-            "system_input",
-            "disable_maxtoken_hint",
-        ):
-            payload.pop(local_field, None)
-        payload["model"] = self.model
-        return to_json_value(payload)
+        return to_json_value(asdict(self))
 
+    @classmethod
+    def from_dict(cls, value: Dict[str, Any]) -> "ChatCompletionRequest":
+        messages = tuple(
+            ChatCompletionMessage(
+                role=str(message.get("role", "")),
+                content=message.get("content", ""),
+            )
+            for message in value.get("messages", ())
+            if isinstance(message, dict)
+        )
+        stream_options = value.get("stream_options")
+        return cls(
+            model=str(value.get("model", "")),
+            messages=messages,
+            temperature=float(value.get("temperature", 0.1)),
+            stream=bool(value.get("stream", True)),
+            max_tokens=value.get("max_tokens"),
+            stream_options=(
+                ChatCompletionStreamOptions(
+                    include_usage=bool(stream_options.get("include_usage", True)),
+                )
+                if isinstance(stream_options, dict)
+                else None
+            ),
+        )
 
 def image_path_to_data_url(image_path: Any) -> str:
     path = Path(image_path)
@@ -371,7 +289,12 @@ class LLMInferInputRecord(object):
     prompt: Union[str, list]
     image_paths: Optional[Sequence[Any]] = None
     image_data_urls: Optional[Sequence[str]] = None
-    model_settings: Optional[ChatCompletionRequest] = None
+    chat_completion_request: Optional[ChatCompletionRequest] = None
+    api: Optional[ApiConfig] = None
+    timeout: Optional[float] = None
+    disable_thinking: bool = False
+    disable_maxtoken_hint: bool = False
+    do_print_one_response_per_line: bool = False
     # Full original input row (id + all extra CSV columns) carried through so
     # LLMInferOutput.to_dict() can produce a self-contained record without any
     # external dict merge.
@@ -380,18 +303,76 @@ class LLMInferInputRecord(object):
     # can be read, compared, and used in dataclasses.replace() without indirection.
     # Populated from extra['id'] in __post_init__ when not passed explicitly.
     id: str = ""
+    system_input: Optional[str] = None
 
     def __post_init__(self) -> None:
-        ms = (
-            self.model_settings
-            if self.model_settings is not None
-            else ChatCompletionRequest()
+        local_env = read_env_file(ENV_FILE)
+        local_env.update(os.environ)
+        request = self.chat_completion_request or ChatCompletionRequest()
+        api = self.api
+        api_key = ((api.api_key if api else None) or local_env.get("LLM_API_KEY", "")).strip()
+        base_url = ((api.base_url if api else None) or local_env.get(
+            "LLM_BASE_URL", api_innospark_cn_v_
+        )).strip().rstrip("/")
+        model = (
+            request.model
+            or (api.model if api else None)
+            or local_env.get("LLM_MODEL", "gemini-2.5-flash")
+        ).strip() or "gemini-2.5-flash"
+        timeout = (
+            self.timeout
+            if self.timeout is not None
+            else float(local_env.get("TIMEOUT_SECONDS", "60"))
         )
-
+        require_positive_number("timeout", timeout)
+        is_local = any(h in base_url for h in ("localhost", "127.0.0.1", "0.0.0.0"))
+        if not api_key and not is_local:
+            print(
+                f"ERROR: LLM_API_KEY is empty. Set it in {ENV_FILE} or export LLM_API_KEY.",
+                file=sys.stderr,
+            )
+            sys.exit(2)
         image_data_urls = [u.strip() for u in (self.image_data_urls or ()) if u.strip()]
         image_data_urls.extend(image_path_to_data_url(p) for p in (self.image_paths or ()))
+        system_input = self.system_input
+        hint_marker = "Total token budget including reasoning is:"
+        if request.max_tokens is not None and system_input is not None and (
+                not self.disable_maxtoken_hint and hint_marker not in system_input):
+            system_input += (
+                f"\n{hint_marker} {request.max_tokens}. Reasoning budget can not "
+                f"be more than {int(request.max_tokens * 0.8)} tokens"
+            )
+        messages: list[ChatCompletionMessage] = []
+        if system_input:
+            messages.append(ChatCompletionMessage(role="system", content=system_input))
+        messages.append(ChatCompletionMessage(
+            role="user",
+            content=build_user_content(self.prompt, image_data_urls),
+        ))
+        request = ChatCompletionRequest(
+            model=model,
+            messages=tuple(messages),
+            temperature=request.temperature,
+            stream=request.stream,
+            max_tokens=request.max_tokens,
+            stream_options=(
+                request.stream_options
+                if request.stream_options is not None
+                else ChatCompletionStreamOptions()
+                if request.stream
+                else None
+            ),
+        )
         object.__setattr__(self, "image_data_urls", tuple(image_data_urls))
-        object.__setattr__(self, "model_settings", ms)
+        object.__setattr__(self, "system_input", system_input)
+        object.__setattr__(self, "chat_completion_request", request)
+        object.__setattr__(self, "api", ApiConfig(
+            base_url=base_url,
+            api_key=api_key,
+            model=model,
+            model_alias=api.model_alias if api else None,
+        ))
+        object.__setattr__(self, "timeout", timeout)
         if not self.prompt:
             raise ValueError("prompt is empty")
         # if not ms.system_input:
@@ -408,9 +389,7 @@ class LLMInferInputRecord(object):
         ones embedded in ``extra['model_settings']`` — a dict, or a stringified
         dict when round-tripped through a CSV cell — so check that first. When
         absent (a freshly-built instance), fall back to the live
-        ``model_settings.model``. The order matters: loading passes
-        ``model_settings=None``, so ``__post_init__`` fills in a *default*
-        ChatCompletionRequest whose ``.model`` would otherwise mask the real value.
+        live ``chat_completion_request.model``.
         """
         # A direct ``model`` column in extra wins (e.g. openlearnlm records carry
         # the model name as a field rather than inside model_settings).
@@ -425,20 +404,24 @@ class LLMInferInputRecord(object):
             except (ValueError, SyntaxError):
                 ms = None
         if isinstance(ms, dict):
-            # model lives at the top level (legacy) or nested under ``api``
-            # (current ChatCompletionRequest serialises it inside the ApiConfig).
+            # Legacy records stored model at the top level or nested under api.
             m = ms.get("model") or (ms.get("api") or {}).get("model")
             if m:
                 return str(m)
-        if self.model_settings is not None and self.model_settings.model:
-            return self.model_settings.model
+        request = (self.extra or {}).get("chat_completion_request")
+        if isinstance(request, dict) and request.get("model"):
+            return str(request["model"])
+        if self.chat_completion_request is not None:
+            return self.chat_completion_request.model
         return ""
 
     @classmethod
     def from_dict(
         cls,
         row: Dict[str, Any],
-        model_settings: Optional["ChatCompletionRequest"] = None,
+        chat_completion_request: Optional["ChatCompletionRequest"] = None,
+        api: Optional[ApiConfig] = None,
+        timeout: Optional[float] = None,
         image_paths: Optional[Sequence[Any]] = None,
         image_data_urls: Optional[Sequence[str]] = None,
     ) -> "LLMInferInputRecord":
@@ -461,12 +444,24 @@ class LLMInferInputRecord(object):
             k: (None if isinstance(v, float) and math.isnan(v) else v)
             for k, v in row.items()
         }
+        if chat_completion_request is None and isinstance(
+                sanitised.get("chat_completion_request"), dict):
+            chat_completion_request = ChatCompletionRequest.from_dict(
+                sanitised["chat_completion_request"]
+            )
         return cls(
             id=str(sanitised.get("id", "")),
             prompt=str(row["prompt"]),
-            model_settings=model_settings,
+            chat_completion_request=chat_completion_request,
+            api=api,
+            timeout=timeout,
             image_paths=image_paths,
             image_data_urls=image_data_urls,
+            disable_thinking=bool(sanitised.get("disable_thinking", False)),
+            do_print_one_response_per_line=bool(
+                sanitised.get("do_print_one_response_per_line", False)
+            ),
+            system_input=sanitised.get("system_input") or None,
             extra=sanitised,
         )
 
@@ -474,7 +469,9 @@ class LLMInferInputRecord(object):
     def from_csv(
             cls,
             path: "str | Path",
-            model_settings: "Optional[ChatCompletionRequest]" = None,
+            chat_completion_request: "Optional[ChatCompletionRequest]" = None,
+            api: Optional[ApiConfig] = None,
+            timeout: Optional[float] = None,
     ) -> "list[LLMInferInputRecord]":
         """Load a CSV file and convert every row to an instance via ``from_dict``.
 
@@ -485,13 +482,23 @@ class LLMInferInputRecord(object):
         """
         import pandas as pd
         rows = pd.read_csv(path).to_dict("records")
-        return [cls.from_dict(row, model_settings=model_settings) for row in rows]
+        return [
+            cls.from_dict(
+                row,
+                chat_completion_request=chat_completion_request,
+                api=api,
+                timeout=timeout,
+            )
+            for row in rows
+        ]
 
     @classmethod
     def from_jsonl(
             cls,
             path: "str | Path",
-            model_settings: "Optional[ChatCompletionRequest]" = None,
+            chat_completion_request: "Optional[ChatCompletionRequest]" = None,
+            api: Optional[ApiConfig] = None,
+            timeout: Optional[float] = None,
     ) -> "list[LLMInferInputRecord]":
         """Deserialise a JSONL file into a list of instances.
 
@@ -512,7 +519,12 @@ class LLMInferInputRecord(object):
                 record = json.loads(raw)
             except json.JSONDecodeError:
                 continue
-            instances.append(cls.from_dict(record, model_settings=model_settings))
+            instances.append(cls.from_dict(
+                record,
+                chat_completion_request=chat_completion_request,
+                api=api,
+                timeout=timeout,
+            ))
         return instances
 
 
@@ -539,7 +551,9 @@ class LLMInferResultRecord(LLMInferInputRecord):
             row: Dict[str, Any],
             input_: Optional[LLMInferInputRecord] = None,
             *,
-            model_settings: Optional["ChatCompletionRequest"] = None,
+            chat_completion_request: Optional["ChatCompletionRequest"] = None,
+            api: Optional[ApiConfig] = None,
+            timeout: Optional[float] = None,
             image_paths: Optional[Sequence[Any]] = None,
             image_data_urls: Optional[Sequence[str]] = None,
     ) -> "LLMInferResultRecord":
@@ -557,7 +571,9 @@ class LLMInferResultRecord(LLMInferInputRecord):
         if input_ is None:
             input_ = LLMInferInputRecord.from_dict(
                 sanitised,
-                model_settings=model_settings,
+                chat_completion_request=chat_completion_request,
+                api=api,
+                timeout=timeout,
                 image_paths=image_paths,
                 image_data_urls=image_data_urls,
             )
@@ -566,7 +582,13 @@ class LLMInferResultRecord(LLMInferInputRecord):
         return cls(
             id                = input_.id,
             prompt            = input_.prompt,
-            model_settings    = input_.model_settings,
+            chat_completion_request=input_.chat_completion_request,
+            api               = input_.api,
+            timeout           = input_.timeout,
+            disable_thinking  = input_.disable_thinking,
+            disable_maxtoken_hint=input_.disable_maxtoken_hint,
+            do_print_one_response_per_line=input_.do_print_one_response_per_line,
+            system_input      = input_.system_input,
             # image_data_urls on LLMInferInput are already normalised and
             # include converted image_paths; do not convert paths a second time.
             image_data_urls   = input_.image_data_urls,
@@ -580,7 +602,6 @@ class LLMInferResultRecord(LLMInferInputRecord):
         )
 
     def to_dict(self) -> Dict[str, Any]:
-        ms = self.model_settings
         # Start with the original input row (id + all extra CSV columns) so
         # the output record is self-contained without any external dict merge.
         d: Dict[str, Any] = dict(self.extra)
@@ -591,10 +612,15 @@ class LLMInferResultRecord(LLMInferInputRecord):
             "completion_tokens": self.completion_tokens,
             "total_tokens"     : self.total_tokens,
             "latency_ms"       : self.latency_ms,
+            "system_input"     : self.system_input,
+            "disable_thinking" : self.disable_thinking,
+            "do_print_one_response_per_line": self.do_print_one_response_per_line,
+            "chat_completion_request": (
+                self.chat_completion_request.to_dict()
+                if self.chat_completion_request is not None
+                else None
+            ),
         })
-        if ms is not None:
-            from dataclasses import asdict as _asdict
-            d["model_settings"] = _asdict(ms)
         return d
 
     @classmethod
