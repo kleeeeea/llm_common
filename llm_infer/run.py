@@ -12,7 +12,7 @@ from typing import Optional
 
 
 from llm_common.llm_infer.api_info.dataclass_ import DEFAULT_32B_OFFICIAL_API
-from llm_common.llm_infer.api_info.dataclass_ import GEMINI_API
+from llm_common.llm_infer.api_info.dataclass_ import GEMINI_2_5_FLASH_API
 from llm_common.llm_infer.api_info.dataclass_ import MODEL_TO_APICONFIG
 from llm_common.llm_infer.api_info.dataclass_ import apiconfig_for_model
 from llm_common.llm_infer.call_by_single_instance import call_openai
@@ -171,7 +171,7 @@ def main():
     parser.add_argument(
         "--model",
         choices=sorted(MODEL_TO_APICONFIG),
-        default=GEMINI_API.model,
+        default=GEMINI_2_5_FLASH_API.model,
         help="Model name to select the api config from MODEL_TO_APICONFIG.",
     )
     parser.add_argument("--max-workers", type=int, default=1)

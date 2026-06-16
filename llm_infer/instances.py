@@ -175,21 +175,56 @@ ChatCompletionUserContentPart = Union[
 ChatCompletionUserContent = Union[str, tuple[ChatCompletionUserContentPart, ...]]
 
 
+def _content_part_from_dict(part: dict) -> ChatCompletionUserContentPart:
+    """Convert one OpenAI-style content-part dict to its dataclass form.
+
+    Accepts the shapes callers already build (e.g. TeaCH run.py):
+      - ``{"type": "text", "text": ...}``  (also tolerates a ``"content"`` key);
+      - ``{"type": "image_url", "image_url": {"url": ..., "detail": ...}}``
+        (``image_url`` may also be a bare url string).
+    Anything not marked as an image is treated as text.
+    """
+    if part.get("type") == "image_url":
+        image_url = part.get("image_url")
+        if isinstance(image_url, dict):
+            url = str(image_url.get("url", ""))
+            detail = image_url.get("detail")
+        else:
+            url, detail = str(image_url or ""), None
+        return ChatCompletionContentPartImage(
+            image_url=ChatCompletionImageURL(url=url, detail=detail),
+        )
+    text = part.get("text")
+    if text is None:
+        text = part.get("content", "")
+    return ChatCompletionContentPartText(text=str(text))
+
+
 def build_user_content(
         prompt: Union[str, list],
         image_data_urls: Sequence[str],
 ) -> ChatCompletionUserContent:
-    if not image_data_urls:
+    # Fast path: a plain string prompt with no extra images stays a bare string.
+    if not image_data_urls and not isinstance(prompt, list):
         return prompt
-    return (
-        ChatCompletionContentPartText(text=str(prompt)),
-        *(
-            ChatCompletionContentPartImage(
-                image_url=ChatCompletionImageURL(url=image_data_url),
-            )
-            for image_data_url in image_data_urls
-        ),
+    # When prompt is already a list of {'type': ..., ...} content parts, convert
+    # each into its dataclass form instead of str()-ing the whole list; a string
+    # prompt becomes a single text part.
+    if isinstance(prompt, list):
+        prompt_parts = tuple(
+            _content_part_from_dict(p) if isinstance(p, dict)
+            else ChatCompletionContentPartText(text=str(p))
+            for p in prompt
+        )
+    else:
+        prompt_parts = (ChatCompletionContentPartText(text=str(prompt)),)
+    image_parts = tuple(
+        ChatCompletionContentPartImage(
+            image_url=ChatCompletionImageURL(url=image_data_url),
+        )
+        for image_data_url in image_data_urls
     )
+    return prompt_parts + image_parts
 
 
 @dataclass(frozen=True)

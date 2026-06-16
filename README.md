@@ -24,12 +24,12 @@ llm_common/
 
 ```python
 from llm_common.llm_infer.call import call_openai, ModelSettings
-from llm_common.llm_infer.api_info.dataclass_ import GEMINI_API
+from llm_common.llm_infer.api_info.dataclass_ import GEMINI_2_5_FLASH_API
 
 text = call_openai(
-    prompt="tell me a joke",
-    api_config=GEMINI_API,
-    system_input="You are a helpful assistant",
+        prompt="tell me a joke",
+        api_config=GEMINI_2_5_FLASH_API,
+        system_input="You are a helpful assistant",
 )
 ```
 

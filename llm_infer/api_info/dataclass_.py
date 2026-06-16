@@ -1,9 +1,12 @@
+import json
 import os
+import re
 from dataclasses import dataclass
 from typing import Dict
 from typing import Optional
 
-from llm_common.llm_infer.load_env import ENV_FILE, load_env_file
+from llm_common.llm_infer.load_env import ENV_FILE
+from llm_common.llm_infer.load_env import load_env_file
 
 load_env_file(ENV_FILE)
 SII_API_KEY = os.environ.get("SII_API_KEY", "")
@@ -24,12 +27,12 @@ class ApiConfig:
         cls,
         *,
         defaults: "ApiConfig",
-        url_env: str,
-        key_env: str,
-        model_env: str,
+        url_env: Optional[str]=None,
+        key_env: Optional[str]=None,
+        model_env: Optional[str]=None,
     ) -> "ApiConfig":
         def env_or_default(name: str, default: str) -> str:
-            value = os.environ.get(name, "").strip()
+            value = os.environ.get(name, "").strip() if name else None
             return value if value else default
 
         return cls(
@@ -39,6 +42,59 @@ class ApiConfig:
             # keep the display alias from defaults (env only overrides the real model).
             model_alias=defaults.model_alias,
             multimodal=defaults.multimodal,
+        )
+
+    @classmethod
+    def from_curl(
+        cls,
+        curl: str,
+        *,
+        model_alias: Optional[str] = None,
+        multimodal: bool = False,
+    ) -> "ApiConfig":
+        """Build an ApiConfig from a curl command (inverse of render_curl).
+
+        Parses the three pieces render_curl emits:
+          - the POST endpoint URL  → base_url (the trailing /chat/completions is
+            stripped so it can drive an OpenAI-style client again);
+          - ``Authorization: Bearer <key>``  → api_key;
+          - the JSON ``-d`` body's ``"model"`` field  → model.
+        """
+        # ── URL → base_url ───────────────────────────────────────────────
+        # Prefer the chat/completions endpoint; fall back to the first http(s)
+        # URL in the command. Accepts single- or double-quoted or bare URLs.
+        url_match = re.search(r'https?://\S*?/chat/completions', curl) \
+            or re.search(r'''https?://[^\s'"]+''', curl)
+        if not url_match:
+            raise ValueError("from_curl: 找不到请求 URL")
+        url = url_match.group(0)
+        base_url = re.sub(r'/chat/completions/?$', '', url)
+
+        # ── Authorization header → api_key ───────────────────────────────
+        key_match = re.search(
+            r'''Authorization:\s*Bearer\s+([^\s'"]+)''', curl, re.IGNORECASE
+        )
+        api_key = key_match.group(1) if key_match else ""
+
+        # ── -d / --data body → model ─────────────────────────────────────
+        body_match = re.search(
+            r'''(?:-d|--data(?:-raw|-binary)?)\s+(['"])(.*?)\1''',
+            curl,
+            re.DOTALL,
+        )
+        if not body_match:
+            raise ValueError("from_curl: 找不到 -d 请求体")
+        try:
+            model = json.loads(body_match.group(2))["model"]
+        except (json.JSONDecodeError, KeyError, TypeError) as error:
+            raise ValueError(f"from_curl: 无法从请求体解析 model: {error}")
+
+        return cls(
+            base_url=base_url,
+            api_key=api_key,
+            model=model,
+            model_alias=model_alias,
+            multimodal=multimodal,
         )
 
 # @dataclass
@@ -134,7 +190,32 @@ DEFAULT_INNOSPARK_API = ApiConfig.from_env(
 
 DEFAULT_BASELINE_API = DEFAULT_1T_BASELINE_API
 
-GEMINI_API = ApiConfig.from_env(
+
+claude_opus_4_6_API = ApiConfig.from_env(
+    defaults=ApiConfig(
+        base_url="https://api.innospark.cn/v1",
+        api_key="",
+        model='claude-opus-4-6',
+        multimodal=True,
+    ),
+    url_env="GEMINI_BASE_URL",
+    key_env="LLM_API_KEY",
+    model_env="GEMINI_MODEL",
+)
+
+GEMINI_2_0_FLASH_API = ApiConfig.from_env(
+    defaults=ApiConfig(
+        base_url="https://api.innospark.cn/v1",
+        api_key="",
+        model="gemini-2.0-flash",
+        multimodal=True,
+    ),
+    url_env="GEMINI_BASE_URL",
+    key_env="LLM_API_KEY",
+    model_env="GEMINI_MODEL",
+)
+
+GEMINI_2_5_FLASH_API = ApiConfig.from_env(
     defaults=ApiConfig(
         base_url="https://api.innospark.cn/v1",
         api_key="",
@@ -145,18 +226,18 @@ GEMINI_API = ApiConfig.from_env(
     key_env="LLM_API_KEY",
     model_env="GEMINI_MODEL",
 )
-DEFAULT_JUDGE_API = GEMINI_API
-Qwen27b_API = ApiConfig.from_env(
+
+doubao_seed_2_0_lite_API = ApiConfig.from_env(
     defaults=ApiConfig(
-        base_url="https://ea5maamppajpchmpmqk5obbpemep5p5k.openapi-qb.sii.edu.cn/v1",
-        api_key=SII_API_KEY,
-        model="Qwen3.6-27B",
+        base_url="https://api.innospark.cn/v1",
+        api_key="",
+        model="doubao-seed-2-0-lite-260215",
     ),
-    url_env="QWEN27B_BASE_URL",
-    key_env="QWEN27B_API_KEY",
-    model_env="QWEN27B_MODEL",
+    key_env="LLM_API_KEY",
 )
 
+
+DEFAULT_JUDGE_API = GEMINI_2_5_FLASH_API
 GLM51FP8_API = ApiConfig.from_env(
     defaults=ApiConfig(
         # https://qz.sii.edu.cn/jobs/modelDeplayDetail/sv-d46fd98b-a669-4acb-92b6-85966acbf383?spaceId=ws-33f55cbb-1e6b-4b37-b69d-3b52568e0a61
@@ -202,18 +283,32 @@ DEEPSEEK_REASONER_API = ApiConfig.from_env(
     model_env="DEEPSEEK_REASONER_MODEL",
 )
 
-KIMI_K25_API = ApiConfig.from_env(
-    defaults=ApiConfig(
-        base_url="https://api.agicto.cn/v1",
-        api_key="",
-        model="kimi-k2.5",
-        model_alias="Kimi-K25",
-        multimodal=True,
-    ),
-    url_env="KIMI_BASE",
-    key_env="KIMI_KEY_PUBLIC",
-    model_env="KIMI_MODEL",
-)
+KIMI_K25_API = ApiConfig.from_curl('''
+curl -sS --fail -X POST "https://daapgkedka89cgphj5peoak85c5dmgkk.openapi-sj.sii.edu.cn/v1/chat/completions" \
+    -H "Content-Type: application/json" \
+    -H "Authorization: Bearer 2uuD5+89UvtRc4nCn5ZMjQyArLh37ndg3Q5fMeZl7p0=" \
+    -d '{
+      "model": "kimi",
+      "messages": [
+        { "role": "user", "content": "hi" }
+      ]
+    }'
+
+''', model_alias='Kimi-K25')
+# ApiConfig.from_env(
+#     defaults=ApiConfig(
+#         base_url="https://api.agicto.cn/v1",
+#         api_key="",
+#         model="kimi-k2.5",
+#         model_alias="Kimi-K25",
+#         multimodal=True,
+#     ),
+#     url_env="KIMI_BASE",
+#     key_env="KIMI_KEY_PUBLIC",
+#     model_env="KIMI_MODEL",
+# )
+
+
 
 MINIMAX_M27_API = ApiConfig.from_env(
     defaults=ApiConfig(
@@ -263,27 +358,65 @@ QWEN35_397B_API = ApiConfig.from_env(
     model_env="QWEN35_397B_MODEL",
 )
 
-QWEN36_35B_API = ApiConfig.from_env(
-    defaults=ApiConfig(
-        base_url="https://8cm59gempbddcop8m5pmjbmheohoaohj.openapi-qb-ai.sii.edu.cn/v1",
-        api_key="",
-        model="qwen",
-        model_alias="qwen3.6-35b",
-        multimodal=False,
-    ),
-    url_env="QWEN36_35B_BASE_URL",
-    key_env="QWEN_KEY_PUBLIC",
-    model_env="QWEN36_35B_MODEL",
+QWEN3_27B_API = ApiConfig.from_curl(
+
+'''
+curl -sS --fail -X POST "https://hadpekkpkjekcd8gk5jdmgmc9qkg9ppc.openapi-sj.sii.edu.cn/v1/chat/completions" \
+    -H "Content-Type: application/json" \
+    -H "Authorization: Bearer 2uuD5+89UvtRc4nCn5ZMjQyArLh37ndg3Q5fMeZl7p0=" \
+    -d '{
+      "model": "qwen3.6-27b",
+      "messages": [
+        { "role": "user", "content": "hi" }
+      ]
+    }'
+''',model_alias = 'qwen3.6-27b'
 )
 
+QWEN3_35B_API = ApiConfig.from_curl(
+        # https://qz.sii.edu.cn/jobs/modelDeplayDetail/sv-04bf176b-d355-4cd0-bfdb-93b86c8c2c89?spaceId=ws-33f55cbb-1e6b-4b37-b69d-3b52568e0a61
+        # https://qz.sii.edu.cn/jobs/modelDeplayDetail/sv-d8e1782e-7440-49c8-a14c-889423a29ae5?spaceId=ws-803be1bb-da46-40d8-ae72-df77df9112ca
+        '''
+  curl -sS --fail -X POST "https://ohpmm8jhhkj8cqegjjd8c5bcqbb8ophc.openapi-sj.sii.edu.cn/v1/chat/completions" \
+    -H "Content-Type: application/json" \
+    -H "Authorization: Bearer 2uuD5+89UvtRc4nCn5ZMjQyArLh37ndg3Q5fMeZl7p0=" \
+    -d '{
+      "model": "Qwen3.5-35B-A3B",
+      "messages": [
+        { "role": "user", "content": "write a poem in 3 words" }
+      ]
+    }'
+        ''',model_alias = 'qwen3.6-35b'
+)
+
+QWEN3_9B_API = ApiConfig.from_curl(
+        # https://qz.sii.edu.cn/jobs/modelDeplayDetail/sv-aa43984b-be99-45f3-9651-bdd9ec9ce147?spaceId=ws-33f55cbb-1e6b-4b37-b69d-3b52568e0a61
+        '''
+  curl -sS --fail -X POST "https://kkcbjhcmmqjjcd5bjed9mppjqojoq9cg.openapi-qb-ai.sii.edu.cn/v1/chat/completions" \
+    -H "Content-Type: application/json" \
+    -H "Authorization: Bearer 2uuD5+89UvtRc4nCn5ZMjQyArLh37ndg3Q5fMeZl7p0=" \
+    -d '{
+      "model": "qwen",
+      "messages": [
+        { "role": "user", "content": "write a poem in 3 words" }
+      ]
+    }'
+        ''',model_alias = 'qwen3.5-9b'
+)
 # Reverse mapping from a model name to its ApiConfig, so callers can look up the
 # full config (base_url / api_key) given just a model string. Built by scanning
 # this module's ApiConfig instances; on a model-name collision the first-defined
 # config wins (globals() preserves definition order).
 MODEL_TO_APICONFIG: Dict[str, ApiConfig] = {}
+# Separate alias index, so a config whose `model` collides with an earlier one
+# (e.g. QWEN3_9B_API model="qwen" loses to QWEN36_35B_API in MODEL_TO_APICONFIG)
+# is still reachable by its unique `model_alias` (here "qwen3.5-9b").
+ALIAS_TO_APICONFIG: Dict[str, ApiConfig] = {}
 for _name, _value in list(globals().items()):
     if isinstance(_value, ApiConfig):
         MODEL_TO_APICONFIG.setdefault(_value.model, _value)
+        if _value.model_alias:
+            ALIAS_TO_APICONFIG.setdefault(_value.model_alias, _value)
 
 # ---------------------------------------------------------------------------
 # Proxy / gateway models (claude-*/gpt-*/gemini-*/doubao-*/mock). These have no
@@ -324,9 +457,7 @@ for _m, _cfg in PROXY_MODEL_CONFIGS.items():
     MODEL_TO_APICONFIG.setdefault(_m, _cfg)
 
 # Every name a caller may refer to: real model strings + display aliases.
-KNOWN_MODELS: set = set(MODEL_TO_APICONFIG) | {
-    cfg.model_alias for cfg in MODEL_TO_APICONFIG.values() if cfg.model_alias
-}
+KNOWN_MODELS: set = set(MODEL_TO_APICONFIG) | set(ALIAS_TO_APICONFIG)
 
 
 def config_for_model(model: str) -> Optional[ApiConfig]:
@@ -334,10 +465,10 @@ def config_for_model(model: str) -> Optional[ApiConfig]:
     cfg = MODEL_TO_APICONFIG.get(model)
     if cfg is not None:
         return cfg
-    return next(
-        (c for c in MODEL_TO_APICONFIG.values() if c.model_alias == model),
-        None,
-    )
+    get = ALIAS_TO_APICONFIG.get(model)
+    if get is None:
+        raise ValueError(f"Unknown model: {model}")
+    return get
 
 
 def is_known_model(model: str) -> bool:
@@ -379,17 +510,15 @@ def model_alias_for(model: str) -> str:
 
 def main():
     from llm_common.llm_infer.call_by_single_instance import call_openai
-    from llm_common.llm_infer.instances import ChatCompletionRequest
     from llm_common.llm_infer.instances import LLMInferInputRecord
+    api = config_for_model('qwen3.6-9b')
+    print('*' * 50 + f'''\n{api.api_key}\n^^^(doubao_seed_2_0_lite_API.api_key)^^^\n''' + '''\nat:\ndependencies/llm_evals/llm_common/llm_infer/api_info/dataclass_.py:396\n''' + '*' * 50)
+
+
     text = call_openai(LLMInferInputRecord(
         prompt=os.environ.get("PROMPT", "write a paragraph with 3 words"),
-        system_input=os.environ.get("SYSTEM_INPUT", "You're a helpful assistant"),
-        api=DEFAULT_1T_BASELINE_API,
-        chat_completion_request=ChatCompletionRequest(
-            model=DEFAULT_1T_BASELINE_API.model,
-            max_tokens=int(os.environ.get("MAX_TOKENS", "1024")),
-        ),
-        timeout=float(os.environ.get("TIMEOUT_SECONDS", "60")),
+        api=api,
+            disable_thinking=True,
     ))
     print(text)
 
