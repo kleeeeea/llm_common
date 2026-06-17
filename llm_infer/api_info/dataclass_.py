@@ -334,9 +334,40 @@ GLM46V_API = ApiConfig.from_env(
     model_env="GLM46V_MODEL",
 )
 
+'''
+curl -sS --fail -X POST "https://qombekoaqjdbcaqqmh8k5h9makpdhpda.openapi-sj.sii.edu.cn/v1/chat/completions" \
+    -H "Content-Type: application/json" \
+    -H "Authorization: Bearer 2uuD5+89UvtRc4nCn5ZMjQyArLh37ndg3Q5fMeZl7p0=" \
+    -d '{
+      "model": "glm",
+      "messages": [
+        { "role": "user", "content": "你是什么模型" }
+      ],
+      "thinking": {"type": "disabled"},
+      "chat_template_kwargs": {"enable_thinking": false},
+      "enable_thinking": false
+    }'
+        '''
+
+ApiConfig.from_curl(
+        '''
+curl -sS --fail -X POST "https://ppag9oqb5bgqchqmmgqmg9goq98e9d9j.openapi-sj.sii.edu.cn/v1/chat/completions" \
+    -H "Content-Type: application/json" \
+    -H "Authorization: Bearer 2uuD5+89UvtRc4nCn5ZMjQyArLh37ndg3Q5fMeZl7p0=" \
+    -d '{
+      "model": "PaddleOCR-VL-0.9B",
+      "messages": [
+        { "role": "user", "content": "你是什么模型" }
+      ],
+      "enable_thinking": false
+    }'
+        ''',
+    model_alias="qwen3.5-397b",
+)
+
 QWEN35_397B_API = ApiConfig.from_curl(
         '''
-curl -sS --fail -X POST "https://cj5e95ppjjbmc8pqkmqbj8kagdoqcgjc.openapi-sj.sii.edu.cn/v1/chat/completions" \
+curl -sS --fail -X POST "https://dj5ghabgo8dkcqh5hhjmao58qbhaema5.openapi-sj.sii.edu.cn/v1/chat/completions" \
     -H "Content-Type: application/json" \
     -H "Authorization: Bearer 2uuD5+89UvtRc4nCn5ZMjQyArLh37ndg3Q5fMeZl7p0=" \
     -d '{
