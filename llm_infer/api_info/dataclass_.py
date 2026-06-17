@@ -295,18 +295,6 @@ curl -sS --fail -X POST "https://daapgkedka89cgphj5peoak85c5dmgkk.openapi-sj.sii
     }'
 
 ''', model_alias='Kimi-K25')
-# ApiConfig.from_env(
-#     defaults=ApiConfig(
-#         base_url="https://api.agicto.cn/v1",
-#         api_key="",
-#         model="kimi-k2.5",
-#         model_alias="Kimi-K25",
-#         multimodal=True,
-#     ),
-#     url_env="KIMI_BASE",
-#     key_env="KIMI_KEY_PUBLIC",
-#     model_env="KIMI_MODEL",
-# )
 
 
 
@@ -348,7 +336,7 @@ GLM46V_API = ApiConfig.from_env(
 
 QWEN35_397B_API = ApiConfig.from_curl(
         '''
-        curl -sS --fail -X POST "https://cj5e95ppjjbmc8pqkmqbj8kagdoqcgjc.openapi-sj.sii.edu.cn/v1/chat/completions" \
+curl -sS --fail -X POST "https://cj5e95ppjjbmc8pqkmqbj8kagdoqcgjc.openapi-sj.sii.edu.cn/v1/chat/completions" \
     -H "Content-Type: application/json" \
     -H "Authorization: Bearer 2uuD5+89UvtRc4nCn5ZMjQyArLh37ndg3Q5fMeZl7p0=" \
     -d '{
@@ -491,16 +479,17 @@ def model_is_multimodal(model: str) -> bool:
     cfg = config_for_model(model)
     return bool(cfg.multimodal) if cfg is not None else False
 
+apiconfig_for_model = config_for_model
 
-def apiconfig_for_model(model: str) -> ApiConfig:
-    """Return the ApiConfig registered for `model`, or raise KeyError."""
-    try:
-        return MODEL_TO_APICONFIG[model]
-    except KeyError:
-        raise KeyError(
-            f"no ApiConfig registered for model {model!r}; "
-            f"known models: {sorted(MODEL_TO_APICONFIG)}"
-        )
+# def apiconfig_for_model(model: str) -> ApiConfig:
+#     """Return the ApiConfig registered for `model`, or raise KeyError."""
+#     try:
+#         return MODEL_TO_APICONFIG[model]
+#     except KeyError:
+#         raise KeyError(
+#             f"no ApiConfig registered for model {model!r}; "
+#             f"known models: {sorted(MODEL_TO_APICONFIG)}"
+#         )
 
 
 def model_alias_for(model: str) -> str:
@@ -518,7 +507,7 @@ def model_alias_for(model: str) -> str:
 def main():
     from llm_common.llm_infer.call_by_single_instance import call_openai
     from llm_common.llm_infer.instances import LLMInferInputRecord
-    api = config_for_model('qwen3.6-9b')
+    api = config_for_model('qwen3.5-397b')
     print('*' * 50 + f'''\n{api.api_key}\n^^^(doubao_seed_2_0_lite_API.api_key)^^^\n''' + '''\nat:\ndependencies/llm_evals/llm_common/llm_infer/api_info/dataclass_.py:396\n''' + '*' * 50)
 
 
