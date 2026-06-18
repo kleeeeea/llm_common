@@ -295,9 +295,9 @@ curl -sS --fail -X POST "https://daapgkedka89cgphj5peoak85c5dmgkk.openapi-sj.sii
       ]
     }'
 
-''', model_alias='Kimi-K251')
+''', model_alias='Kimi-K25')
 
-KIMI_K25_API = ApiConfig.from_curl('''
+KIMI_K251_API = ApiConfig.from_curl('''
 curl -sS --fail -X POST "https://api.agicto.cn/v1/chat/completions" \
     -H "Content-Type: application/json" \
     -H "Authorization: Bearer sk-gkYa8UuT55XckVX3SGFsamidZMTzDfismSCU9i3YWJB8hs2S" \
@@ -309,7 +309,7 @@ curl -sS --fail -X POST "https://api.agicto.cn/v1/chat/completions" \
       ]
     }'
 
-''', model_alias='Kimi-K25')
+''', model_alias='Kimi-K251')
 
 
 MINIMAX_M27_API = ApiConfig.from_env(
