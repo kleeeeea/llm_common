@@ -255,6 +255,28 @@ def _build_chat_completion_payload(
         payload["thinking"] = {"type": "disabled"}
         payload["chat_template_kwargs"] = {"enable_thinking": False}
         payload["enable_thinking"] = False
+        payload.update({
+            "reasoning_effort": "none",
+        })
+        model_name = str(payload.get("model", "")).lower()
+        if "intern" in model_name:
+            messages = payload.get("messages", [])
+
+            system_content = (
+        "You must answer directly and concisely. "
+        "Do not write any reasoning process. "
+        "Do not output <think>, </think>, hidden reasoning, analysis, or explanation. "
+        "Only output the final answer."
+            )
+
+            if not messages or messages[0].get("role") != "system":
+                payload["messages"] = [
+                    {
+                        "role": "system",
+                        "content": system_content,
+                    },
+                    *messages,
+                ]
     return payload
 
 

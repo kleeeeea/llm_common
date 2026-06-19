@@ -543,6 +543,69 @@ curl -sS --fail -X POST "https://9hj8ceppcaemckkmjk8q98pj995e558a.openapi-sj.sii
         '''
 )
 
+gemma_4_a_2_b_it = ApiConfig.from_curl(
+        '''
+curl -sS --fail -X POST "https://5jj9m99phggaceqamhokhkh9mhka9qhh.openapi-sj.sii.edu.cn/v1/chat/completions" \
+    -H "Content-Type: application/json" \
+    -H "Authorization: Bearer 2uuD5+89UvtRc4nCn5ZMjQyArLh37ndg3Q5fMeZl7p0=" \
+    -d '{
+      "model": "gemma-4-E2B-it",
+        "stream": true,
+      "messages": [
+        { "role": "user", "content": "hi" }
+      ]
+    }'
+        
+        '''
+)
+
+gemma_4_31_b_it = ApiConfig.from_curl(
+        '''
+curl -sS --fail -X POST "https://mpeghck9aqm5cqcdjjooqecpo5cj99c5.openapi-sj.sii.edu.cn/v1/chat/completions" \
+    -H "Content-Type: application/json" \
+    -H "Authorization: Bearer 2uuD5+89UvtRc4nCn5ZMjQyArLh37ndg3Q5fMeZl7p0=" \
+    -d '{
+      "model": "gemma-4-31B-it",
+        "stream": true,
+      "messages": [
+        { "role": "user", "content": "hi" }
+      ]
+    }'
+        
+        '''
+)
+
+gemma_4_26_b_a_4_b_it = ApiConfig.from_curl(
+        '''
+curl -sS --fail -X POST "https://okap9codcoamcmgehjp8pgdpm5kchc8d.openapi-sj.sii.edu.cn/v1/chat/completions" \
+    -H "Content-Type: application/json" \
+    -H "Authorization: Bearer 2uuD5+89UvtRc4nCn5ZMjQyArLh37ndg3Q5fMeZl7p0=" \
+    -d '{
+      "model": "gemma-4-26B-A4B-it",
+        "stream": true,
+      "messages": [
+        { "role": "user", "content": "hi" }
+      ]
+    }'
+        
+        '''
+)
+gemma_4_12_b_it = ApiConfig.from_curl(
+        '''
+curl -sS --fail -X POST "https://pkqjqjjpcoacckdbkbeae9medpcdd8cg.openapi-sj.sii.edu.cn/v1/chat/completions" \
+    -H "Content-Type: application/json" \
+    -H "Authorization: Bearer 2uuD5+89UvtRc4nCn5ZMjQyArLh37ndg3Q5fMeZl7p0=" \
+    -d '{
+      "model": "gemma-4-12B-it",
+        "stream": true,
+      "messages": [
+        { "role": "user", "content": "hi" }
+      ]
+    }'
+        
+        '''
+)
+
 molmo_2_8_b = ApiConfig.from_curl(
         '''
 curl -sS --fail -X POST "https://p8ajcc5dpg95c5pckmg8dmcapdkhghkc.openapi-sj.sii.edu.cn/v1/chat/completions" \
