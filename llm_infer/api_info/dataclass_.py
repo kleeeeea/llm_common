@@ -413,6 +413,167 @@ curl -sS --fail -X POST "https://hadpekkpkjekcd8gk5jdmgmc9qkg9ppc.openapi-sj.sii
 ''',model_alias = 'qwen3.6-27b'
 )
 
+kimi_vl_a_3_b_instruct = ApiConfig.from_curl(
+
+'''
+curl -sS --fail -X POST "https://8ooeepbkqbe5cjgbmdajghm9peho8b8c.openapi-sj.sii.edu.cn/v1/chat/completions" \
+    -H "Content-Type: application/json" \
+    -H "Authorization: Bearer 2uuD5+89UvtRc4nCn5ZMjQyArLh37ndg3Q5fMeZl7p0=" \
+    -d '{
+      "model": "Kimi-VL-A3B-Instruct",
+        "stream": true,
+      "messages": [
+        { "role": "user", "content": "hi" }
+      ]
+    }'
+''',model_alias = 'Kimi-VL-A3B-Instruct'
+)
+
+mi_mo_vl_7_b_sft = ApiConfig.from_curl(
+
+'''
+curl -sS --fail -X POST "https://kjjmghgmdkeacmgqhpbocjjdkdmk5hpg.openapi-sj.sii.edu.cn/v1/chat/completions" \
+    -H "Content-Type: application/json" \
+    -H "Authorization: Bearer 2uuD5+89UvtRc4nCn5ZMjQyArLh37ndg3Q5fMeZl7p0=" \
+    -d '{
+      "model": "MiMo-VL-7B-SFT",
+        "stream": true,
+      "messages": [
+        { "role": "user", "content": "hi" }
+      ]
+    }'
+''',model_alias = 'MiMo-VL-7B-SFT'
+)
+step_3_vl_10_b = ApiConfig.from_curl(
+        '''
+curl -sS --fail -X POST "https://bgamqga5gogjcb9gmqeaohh8hdhbgddm.openapi-sj.sii.edu.cn/v1/chat/completions" \
+    -H "Content-Type: application/json" \
+    -H "Authorization: Bearer 2uuD5+89UvtRc4nCn5ZMjQyArLh37ndg3Q5fMeZl7p0=" \
+    -d '{
+      "model": "Step3-VL-10B",
+        "stream": true,
+      "messages": [
+        { "role": "user", "content": "hi" }
+      ]
+    }'
+        
+        '''
+)
+
+
+qwen_3_5_4_b = ApiConfig.from_curl(
+        '''
+curl -sS --fail -X POST "https://mopmqcgg8j9qccc5m8ppqchgpeadkcam.openapi-sj.sii.edu.cn/v1/chat/completions" \
+    -H "Content-Type: application/json" \
+    -H "Authorization: Bearer 2uuD5+89UvtRc4nCn5ZMjQyArLh37ndg3Q5fMeZl7p0=" \
+    -d '{
+      "model": "Qwen3.5-4B",
+        "stream": true,
+      "messages": [
+        { "role": "user", "content": "hi" }
+      ]
+    }'
+        
+        '''
+)
+
+
+intern_vl_3_5_8_b = ApiConfig.from_curl(
+        '''
+curl -sS --fail -X POST "https://qod5gecmhdkmchm9kd95pqp5qpod89ga.openapi-sj.sii.edu.cn/v1/chat/completions" \
+    -H "Content-Type: application/json" \
+    -H "Authorization: Bearer 2uuD5+89UvtRc4nCn5ZMjQyArLh37ndg3Q5fMeZl7p0=" \
+    -d '{
+      "model": "InternVL3_5-8B",
+        "stream": true,
+      "messages": [
+        { "role": "user", "content": "hi" }
+      ]
+    }'
+        
+        '''
+)
+
+intern_vl_3_4_b = ApiConfig.from_curl(
+        '''
+curl -sS --fail -X POST "https://ppagqmjmcbpmco5bhpgqhcomhqdje8hp.openapi-sj.sii.edu.cn/v1/chat/completions" \
+    -H "Content-Type: application/json" \
+    -H "Authorization: Bearer 2uuD5+89UvtRc4nCn5ZMjQyArLh37ndg3Q5fMeZl7p0=" \
+    -d '{
+      "model": "InternVL3_5-4B",
+        "stream": true,
+      "messages": [
+        { "role": "user", "content": "hi" }
+      ]
+    }'
+        
+        '''
+)
+
+
+intern_vl_3_2_b = ApiConfig.from_curl(
+        '''
+curl -sS --fail -X POST "https://8ghmddbph8gece8hkq5kbokhchcahoop.openapi-sj.sii.edu.cn/v1/chat/completions" \
+    -H "Content-Type: application/json" \
+    -H "Authorization: Bearer 2uuD5+89UvtRc4nCn5ZMjQyArLh37ndg3Q5fMeZl7p0=" \
+    -d '{
+      "model": "InternVL3_5-2B",
+        "stream": true,
+      "messages": [
+        { "role": "user", "content": "hi" }
+      ]
+    }'
+        
+        '''
+)
+
+intern_vl_3_14_b = ApiConfig.from_curl(
+        '''
+curl -sS --fail -X POST "https://9hj8ceppcaemckkmjk8q98pj995e558a.openapi-sj.sii.edu.cn/v1/chat/completions" \
+    -H "Content-Type: application/json" \
+    -H "Authorization: Bearer 2uuD5+89UvtRc4nCn5ZMjQyArLh37ndg3Q5fMeZl7p0=" \
+    -d '{
+      "model": "InternVL3_5-14B",
+        "stream": true,
+      "messages": [
+        { "role": "user", "content": "hi" }
+      ]
+    }'
+        
+        '''
+)
+
+molmo_2_8_b = ApiConfig.from_curl(
+        '''
+curl -sS --fail -X POST "https://p8ajcc5dpg95c5pckmg8dmcapdkhghkc.openapi-sj.sii.edu.cn/v1/chat/completions" \
+    -H "Content-Type: application/json" \
+    -H "Authorization: Bearer 2uuD5+89UvtRc4nCn5ZMjQyArLh37ndg3Q5fMeZl7p0=" \
+    -d '{
+      "model": "Molmo2-8B",
+        "stream": true,
+      "messages": [
+        { "role": "user", "content": "hi" }
+      ]
+    }'
+        
+        ''')
+
+phi_3_5_vision_instruct = ApiConfig.from_curl(
+        '''
+curl -sS --fail -X POST "https://pqaqocbbmme8cg9kjegbbdee8am98g5d.openapi-sj.sii.edu.cn/v1/chat/completions" \
+    -H "Content-Type: application/json" \
+    -H "Authorization: Bearer 2uuD5+89UvtRc4nCn5ZMjQyArLh37ndg3Q5fMeZl7p0=" \
+    -d '{
+      "model": "Phi-3.5-vision-instruct",
+        "stream": true,
+      "messages": [
+        { "role": "user", "content": "hi" }
+      ]
+    }'
+        
+        ''')
+
+
 QWEN3_35B_API = ApiConfig.from_curl(
         # https://qz.sii.edu.cn/jobs/modelDeplayDetail/sv-04bf176b-d355-4cd0-bfdb-93b86c8c2c89?spaceId=ws-33f55cbb-1e6b-4b37-b69d-3b52568e0a61
         # https://qz.sii.edu.cn/jobs/modelDeplayDetail/sv-d8e1782e-7440-49c8-a14c-889423a29ae5?spaceId=ws-803be1bb-da46-40d8-ae72-df77df9112ca
