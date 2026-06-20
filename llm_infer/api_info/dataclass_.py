@@ -398,20 +398,6 @@ curl -sS --fail -X POST "https://dj5ghabgo8dkcqh5hhjmao58qbhaema5.openapi-sj.sii
     model_alias="qwen3.5-397b",
 )
 
-QWEN3_27B_API = ApiConfig.from_curl(
-
-'''
-curl -sS --fail -X POST "https://hadpekkpkjekcd8gk5jdmgmc9qkg9ppc.openapi-sj.sii.edu.cn/v1/chat/completions" \
-    -H "Content-Type: application/json" \
-    -H "Authorization: Bearer 2uuD5+89UvtRc4nCn5ZMjQyArLh37ndg3Q5fMeZl7p0=" \
-    -d '{
-      "model": "qwen3.6-27b",
-      "messages": [
-        { "role": "user", "content": "hi" }
-      ]
-    }'
-''',model_alias = 'qwen3.6-27b'
-)
 
 kimi_vl_a_3_b_instruct = ApiConfig.from_curl(
 
@@ -637,7 +623,8 @@ curl -sS --fail -X POST "https://pqaqocbbmme8cg9kjegbbdee8am98g5d.openapi-sj.sii
         ''')
 
 
-QWEN3_35B_API = ApiConfig.from_curl(
+QWEN3_5_35B_API = ApiConfig.from_curl(
+        # https://qz.sii.edu.cn/jobs/modelDeplayDetail/sv-c8dbb098-8a90-4e67-9950-4f34e330cd84?spaceId=ws-803be1bb-da46-40d8-ae72-df77df9112ca
         # https://qz.sii.edu.cn/jobs/modelDeplayDetail/sv-04bf176b-d355-4cd0-bfdb-93b86c8c2c89?spaceId=ws-33f55cbb-1e6b-4b37-b69d-3b52568e0a61
         # https://qz.sii.edu.cn/jobs/modelDeplayDetail/sv-d8e1782e-7440-49c8-a14c-889423a29ae5?spaceId=ws-803be1bb-da46-40d8-ae72-df77df9112ca
         '''
@@ -653,6 +640,40 @@ QWEN3_35B_API = ApiConfig.from_curl(
         ''',model_alias = 'qwen3.6-35b'
 )
 
+QWEN3_6_35B_API = ApiConfig.from_curl(
+        # https://qz.sii.edu.cn/jobs/modelDeplayDetail/sv-c8dbb098-8a90-4e67-9950-4f34e330cd84?spaceId=ws-803be1bb-da46-40d8-ae72-df77df9112ca
+        # https://qz.sii.edu.cn/jobs/modelDeplayDetail/sv-04bf176b-d355-4cd0-bfdb-93b86c8c2c89?spaceId=ws-33f55cbb-1e6b-4b37-b69d-3b52568e0a61
+        # https://qz.sii.edu.cn/jobs/modelDeplayDetail/sv-d8e1782e-7440-49c8-a14c-889423a29ae5?spaceId=ws-803be1bb-da46-40d8-ae72-df77df9112ca
+        '''
+  curl -sS --fail -X POST "https://o9mkjmpjgcgacoj9j8hahqekhbk9h5oo.openapi-sj.sii.edu.cn/v1/chat/completions" \
+    -H "Content-Type: application/json" \
+    -H "Authorization: Bearer 2uuD5+89UvtRc4nCn5ZMjQyArLh37ndg3Q5fMeZl7p0=" \
+    -d '{
+      "model": "qwen3.6",
+      "messages": [
+        { "role": "user", "content": "write a poem in 3 words" }
+      ]
+    }'
+        ''',model_alias = 'qwen3.6-35b-latest'
+)
+
+
+
+QWEN3_27B_API = ApiConfig.from_curl(
+
+'''
+curl -sS --fail -X POST "https://hadpekkpkjekcd8gk5jdmgmc9qkg9ppc.openapi-sj.sii.edu.cn/v1/chat/completions" \
+    -H "Content-Type: application/json" \
+    -H "Authorization: Bearer 2uuD5+89UvtRc4nCn5ZMjQyArLh37ndg3Q5fMeZl7p0=" \
+    -d '{
+      "model": "qwen3.6-27b",
+        "stream": true,
+      "messages": [
+        { "role": "user", "content": "hi" }
+      ]
+    }'
+''',model_alias = 'qwen3.6-27b'
+)
 QWEN3_9B_API = ApiConfig.from_curl(
         # https://qz.sii.edu.cn/jobs/modelDeplayDetail/sv-aa43984b-be99-45f3-9651-bdd9ec9ce147?spaceId=ws-33f55cbb-1e6b-4b37-b69d-3b52568e0a61
         '''
