@@ -547,7 +547,7 @@ curl -sS --fail -X POST "https://5jj9m99phggaceqamhokhkh9mhka9qhh.openapi-sj.sii
 
 gemma_4_31_b_it = ApiConfig.from_curl(
         '''
-curl -sS --fail -X POST "https://mpeghck9aqm5cqcdjjooqecpo5cj99c5.openapi-sj.sii.edu.cn/v1/chat/completions" \
+curl -sS --fail -X POST "https://gkb58a8empphckgdhdqbamphoegom9jd.openapi-sj.sii.edu.cn/v1/chat/completions" \
     -H "Content-Type: application/json" \
     -H "Authorization: Bearer 2uuD5+89UvtRc4nCn5ZMjQyArLh37ndg3Q5fMeZl7p0=" \
     -d '{
