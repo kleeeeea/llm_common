@@ -336,16 +336,21 @@ GLM5_API = ApiConfig.from_env(
     model_env="GLM5_MODEL",
 )
 
-GLM46V_API = ApiConfig.from_env(
-    defaults=ApiConfig(
-        base_url="https://d9mppg5ga5gcc8jkj85h88g8mghpjkbd.openapi-qb-ai.sii.edu.cn/v1",
-        api_key="",
-        model="glm-4.6v",
-        multimodal=True,
-    ),
-    url_env="GLM46V_BASE_URL",
-    key_env="GLM46V_KEY_PUBLIC",
-    model_env="GLM46V_MODEL",
+GLM46V_API = ApiConfig.from_curl(
+    '''
+    
+curl -sS --fail -X POST "https://bpdbqbeeag9eckcckohq8mk9bqqh8h5a.openapi-sj.sii.edu.cn/v1/chat/completions" \
+    -H "Content-Type: application/json" \
+    -H "Authorization: Bearer 2uuD5+89UvtRc4nCn5ZMjQyArLh37ndg3Q5fMeZl7p0=" \
+    -d '{
+      "model": "glm",
+        "stream": true,
+      "messages": [
+        { "role": "user", "content": "你是什么模型" }
+      ]
+    }'
+
+    ''',model_alias="glm-4.6v"
 )
 
 '''
@@ -577,21 +582,6 @@ curl -sS --fail -X POST "https://qhjjb5dbmbp9coe5jdkqaqdj8ok8hbhc.openapi-sj.sii
 )
 
 
-gemma_4_a_2_b_it = ApiConfig.from_curl(
-        '''
-curl -sS --fail -X POST "https://5jj9m99phggaceqamhokhkh9mhka9qhh.openapi-sj.sii.edu.cn/v1/chat/completions" \
-    -H "Content-Type: application/json" \
-    -H "Authorization: Bearer 2uuD5+89UvtRc4nCn5ZMjQyArLh37ndg3Q5fMeZl7p0=" \
-    -d '{
-      "model": "gemma-4-E2B-it",
-        "stream": true,
-      "messages": [
-        { "role": "user", "content": "hi" }
-      ]
-    }'
-        
-        '''
-)
 gemma_4_a_2_b_it = ApiConfig.from_curl(
         '''
 curl -sS --fail -X POST "https://5jj9m99phggaceqamhokhkh9mhka9qhh.openapi-sj.sii.edu.cn/v1/chat/completions" \
