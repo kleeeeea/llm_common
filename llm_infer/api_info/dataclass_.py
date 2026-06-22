@@ -337,13 +337,14 @@ GLM5_API = ApiConfig.from_env(
 )
 
 GLM46V_API = ApiConfig.from_curl(
+    #     支持这种v4的custom url
     '''
     
-curl -sS --fail -X POST "https://bpdbqbeeag9eckcckohq8mk9bqqh8h5a.openapi-sj.sii.edu.cn/v1/chat/completions" \
+curl -sS --fail -X POST "https://open.bigmodel.cn/api/paas/v4/chat/completions" \
     -H "Content-Type: application/json" \
-    -H "Authorization: Bearer 2uuD5+89UvtRc4nCn5ZMjQyArLh37ndg3Q5fMeZl7p0=" \
+    -H "Authorization: Bearer ede4a85f26aa42e7a17a6379d0134dd7.WNvvHwlVkhqxg8Gt" \
     -d '{
-      "model": "glm",
+      "model": "glm-4.6v",
         "stream": true,
       "messages": [
         { "role": "user", "content": "你是什么模型" }
@@ -353,20 +354,6 @@ curl -sS --fail -X POST "https://bpdbqbeeag9eckcckohq8mk9bqqh8h5a.openapi-sj.sii
     ''',model_alias="glm-4.6v"
 )
 
-'''
-curl -sS --fail -X POST "https://qombekoaqjdbcaqqmh8k5h9makpdhpda.openapi-sj.sii.edu.cn/v1/chat/completions" \
-    -H "Content-Type: application/json" \
-    -H "Authorization: Bearer 2uuD5+89UvtRc4nCn5ZMjQyArLh37ndg3Q5fMeZl7p0=" \
-    -d '{
-      "model": "glm",
-      "messages": [
-        { "role": "user", "content": "你是什么模型" }
-      ],
-      "thinking": {"type": "disabled"},
-      "chat_template_kwargs": {"enable_thinking": false},
-      "enable_thinking": false
-    }'
-        '''
 
 ApiConfig.from_curl(
         '''
