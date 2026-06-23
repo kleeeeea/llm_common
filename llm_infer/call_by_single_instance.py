@@ -53,6 +53,41 @@ def _build_chat_completions_url(base_url: str) -> str:
     return f"{base_url}/chat/completions"
 
 
+def _dump_curl_command(
+        chat_completions_url: str,
+        api_key: str,
+        body: dict[str, Any],
+        timeout: Optional[float],
+        output_path: Optional[str] = None,
+) -> str:
+    if output_path is None:
+        output_path = os.path.join(
+            os.path.dirname(os.path.abspath(__file__)),
+            "curl_latest.sh",
+        )
+    json_body = json.dumps(body, ensure_ascii=False, indent=2)
+
+    command_lines = [
+        "#!/usr/bin/env bash",
+        f"LLM_API_KEY=${{LLM_API_KEY:-{shlex.quote(api_key)}}}",
+        "curl -sS -N -X POST \\",
+    ]
+    if timeout is not None:
+        command_lines.append(f"  --max-time {shlex.quote(str(timeout))} \\")
+    command_lines.extend([
+        f"  {shlex.quote(chat_completions_url)} \\",
+        '  -H "Authorization: Bearer ${LLM_API_KEY}" \\',
+        "  -H 'Content-Type: application/json' \\",
+        f"  -d {shlex.quote(json_body)}",
+        "",
+    ])
+
+    with open(output_path, "w", encoding="utf-8") as file:
+        file.write("\n".join(command_lines))
+    os.chmod(output_path, 0o700)
+    return output_path
+
+
 def _check_server_health(base_url: str, api_key: str, timeout: float = 10.0) -> None:
     """正式发流式请求前，先用 curl 探测远端服务器是否可达，失败则快速报错。
 
@@ -351,6 +386,14 @@ def call_openai(
             method="POST",
     )
 
+    # dump to the curl command to curl_latest.sh at the same directory
+    curl_path = _dump_curl_command(
+        _build_chat_completions_url(input_.api.base_url),
+        input_.api.api_key,
+        body,
+        input_.timeout,
+    )
+    print(f"dumped latest curl command to {curl_path}")
 
     chunks: list[str] = []
     reasoning_chunks: list[str] = []

@@ -1,5 +1,7 @@
 import io
 import json
+import os
+import tempfile
 import unittest
 from contextlib import redirect_stderr
 from contextlib import redirect_stdout
@@ -15,6 +17,7 @@ from llm_common.llm_infer.call_by_single_instance import ChatCompletionImageURL
 from llm_common.llm_infer.call_by_single_instance import ChatCompletionRequest
 from llm_common.llm_infer.call_by_single_instance import _build_chat_completion_payload
 from llm_common.llm_infer.call_by_single_instance import _build_chat_completion_request
+from llm_common.llm_infer.call_by_single_instance import _dump_curl_command
 from llm_common.llm_infer.call_by_single_instance import _extract_stream_text
 from llm_common.llm_infer.call_by_single_instance import _check_server_health
 from llm_common.llm_infer.call_by_single_instance import build_user_content
@@ -214,7 +217,51 @@ class ServerHealthCheckTest(unittest.TestCase):
         self.assertNotIn("secret-api-key", str(raised.exception))
 
 
+class CurlDumpTest(unittest.TestCase):
+    def test_dump_curl_command_uses_env_api_key_and_payload(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            output_path = os.path.join(temp_dir, "curl_latest.sh")
+            body = {
+                "model": "test-model",
+                "messages": [{"role": "user", "content": "hello"}],
+            }
+
+            written_path = _dump_curl_command(
+                "http://localhost:8000/v1/chat/completions",
+                "test-key",
+                body,
+                timeout=5.0,
+                output_path=output_path,
+            )
+
+            self.assertEqual(written_path, output_path)
+            with open(output_path, encoding="utf-8") as file:
+                script = file.read()
+
+        self.assertIn("LLM_API_KEY", script)
+        self.assertIn("LLM_API_KEY=${LLM_API_KEY:-test-key}", script)
+        self.assertIn("http://localhost:8000/v1/chat/completions", script)
+        self.assertIn("--max-time 5.0", script)
+        self.assertIn("  -d '{", script)
+        self.assertNotIn("--data ", script)
+        self.assertIn('"model": "test-model"', script)
+        self.assertIn('"content": "hello"', script)
+        self.assertTrue(script.startswith("#!/usr/bin/env bash\n"))
+
+
 class CallOpenAIStreamingTest(unittest.TestCase):
+    def setUp(self):
+        self.temp_dir = tempfile.TemporaryDirectory()
+        self.dump_patcher = patch(
+            "llm_common.llm_infer.call_by_single_instance._dump_curl_command",
+            return_value=os.path.join(self.temp_dir.name, "curl_latest.sh"),
+        )
+        self.dump_mock = self.dump_patcher.start()
+
+    def tearDown(self):
+        self.dump_patcher.stop()
+        self.temp_dir.cleanup()
+
     @patch("llm_common.llm_infer.call_by_single_instance._check_server_health")
     @patch("llm_common.llm_infer.call_by_single_instance.urllib.request.urlopen")
     def test_mock_model_returns_without_network(self, urlopen, health_check):
@@ -314,6 +361,8 @@ class CallOpenAIStreamingTest(unittest.TestCase):
         self.assertEqual(result.reasoning, "reason")
         self.assertEqual(result.total_tokens, 2)
         health_check.assert_called_once()
+        self.dump_mock.assert_called_once()
+        self.assertEqual(self.dump_mock.call_args.args[1], "test-key")
 
     @patch("llm_common.llm_infer.call_by_single_instance._check_server_health")
     @patch("llm_common.llm_infer.call_by_single_instance.urllib.request.urlopen")
