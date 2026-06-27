@@ -295,7 +295,21 @@ curl -sS --fail -X POST "https://daapgkedka89cgphj5peoak85c5dmgkk.openapi-sj.sii
       ]
     }'
 
-''', model_alias='Kimi-K25')
+''', model_alias='Kimi-K251')
+
+llama_3_2_11_b_vision_instruct = ApiConfig.from_curl('''
+curl -sS --fail -X POST "https://gk5b5booehhbce9jjcpj9e9epqm5agdd.openapi-sj.sii.edu.cn/v1/chat/completions" \
+    -H "Content-Type: application/json" \
+    -H "Authorization: Bearer 2uuD5+89UvtRc4nCn5ZMjQyArLh37ndg3Q5fMeZl7p0=" \
+    -d '{
+        "model": "Llama-3.2-11B-Vision-Instruct",
+        "stream": true,
+        "messages": [
+        { "role": "user", "content": "hi" }
+      ]
+    }'
+
+''', model_alias='Llama-3.2-11B-Vision-Instruct')
 
 KIMI_K251_API = ApiConfig.from_curl('''
 curl -sS --fail -X POST "https://api.agicto.cn/v1/chat/completions" \
@@ -309,7 +323,7 @@ curl -sS --fail -X POST "https://api.agicto.cn/v1/chat/completions" \
       ]
     }'
 
-''', model_alias='Kimi-K251')
+''', model_alias='Kimi-K25')
 
 
 MINIMAX_M27_API = ApiConfig.from_env(
@@ -355,35 +369,17 @@ curl -sS --fail -X POST "https://open.bigmodel.cn/api/paas/v4/chat/completions" 
 )
 
 
-ApiConfig.from_curl(
-        '''
-curl -sS --fail -X POST "https://ppag9oqb5bgqchqmmgqmg9goq98e9d9j.openapi-sj.sii.edu.cn/v1/chat/completions" \
-    -H "Content-Type: application/json" \
-    -H "Authorization: Bearer 2uuD5+89UvtRc4nCn5ZMjQyArLh37ndg3Q5fMeZl7p0=" \
-    -d '{
-      "model": "PaddleOCR-VL-0.9B",
-      "messages": [
-        { "role": "user", "content": "你是什么模型" }
-      ],
-      "enable_thinking": false
-    }'
-        ''',
-    model_alias="qwen3.5-397b",
-)
-
 QWEN35_397B_API = ApiConfig.from_curl(
         '''
-curl -sS --fail -X POST "https://dj5ghabgo8dkcqh5hhjmao58qbhaema5.openapi-sj.sii.edu.cn/v1/chat/completions" \
+curl -sS --fail -X POST "https://api.agicto.cn/v1/chat/completions" \
     -H "Content-Type: application/json" \
-    -H "Authorization: Bearer 2uuD5+89UvtRc4nCn5ZMjQyArLh37ndg3Q5fMeZl7p0=" \
+    -H "Authorization: Bearer sk-gkYa8UuT55XckVX3SGFsamidZMTzDfismSCU9i3YWJB8hs2S" \
     -d '{
-      "model": "qwen397",
-      "messages": [
+        "model": "qwen3.5-397b-a17b",
+        "stream": true,
+        "messages": [
         { "role": "user", "content": "hi" }
-      ],
-      "thinking": {"type": "disabled"},
-      "chat_template_kwargs": {"enable_thinking": false},
-      "enable_thinking": false
+      ]
     }'
 
         ''',

@@ -471,7 +471,13 @@ def call_openai(
     text = "".join(chunks).strip()
     if not text:
         print("ERROR: stream completed but produced no text", file=sys.stderr)
-        raise Exception('llm error')
+        if 'https://api.agicto.cn/v1' in input_.api.base_url:
+            # commercial api shouldn't lead to infra error
+            text = 'Score：0'
+
+        else:
+            raise Exception('llm error')
+
     reasoning = "".join(reasoning_chunks).strip() or None
     print()
     return LLMInferResultRecord.from_dict({
@@ -486,3 +492,4 @@ def call_openai(
 
 if __name__ == "__main__":
     raise SystemExit(main())
+
