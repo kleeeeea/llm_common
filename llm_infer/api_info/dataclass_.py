@@ -284,7 +284,7 @@ DEEPSEEK_REASONER_API = ApiConfig.from_env(
 )
 
 KIMI_K25_API = ApiConfig.from_curl('''
-curl -sS --fail -X POST "https://daapgkedka89cgphj5peoak85c5dmgkk.openapi-sj.sii.edu.cn/v1/chat/completions" \
+curl -sS --fail -X POST "https://eojmhg88q8ojcg98kd5q8geoqeeeag95.openapi-sj.sii.edu.cn/v1/chat/completions" \
     -H "Content-Type: application/json" \
     -H "Authorization: Bearer 2uuD5+89UvtRc4nCn5ZMjQyArLh37ndg3Q5fMeZl7p0=" \
     -d '{
@@ -295,7 +295,7 @@ curl -sS --fail -X POST "https://daapgkedka89cgphj5peoak85c5dmgkk.openapi-sj.sii
       ]
     }'
 
-''', model_alias='Kimi-K251')
+''', model_alias='Kimi-K25')
 
 llama_3_2_11_b_vision_instruct = ApiConfig.from_curl('''
 curl -sS --fail -X POST "https://gk5b5booehhbce9jjcpj9e9epqm5agdd.openapi-sj.sii.edu.cn/v1/chat/completions" \
@@ -323,7 +323,7 @@ curl -sS --fail -X POST "https://api.agicto.cn/v1/chat/completions" \
       ]
     }'
 
-''', model_alias='Kimi-K25')
+''', model_alias='Kimi-K251')
 
 
 MINIMAX_M27_API = ApiConfig.from_env(
