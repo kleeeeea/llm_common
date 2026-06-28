@@ -397,7 +397,6 @@ curl -sS --fail -X POST "https://api.agicto.cn/v1/chat/completions" \
         { "role": "user", "content": "hi" }
       ]
     }'''
-pdaj8d5bm9hcckmkjbpkoekpe8q5pedp
 kimi_vl_a_3_b_instruct = ApiConfig.from_curl(
 
 '''
