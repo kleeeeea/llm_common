@@ -371,6 +371,22 @@ curl -sS --fail -X POST "https://open.bigmodel.cn/api/paas/v4/chat/completions" 
 
 QWEN35_397B_API = ApiConfig.from_curl(
         '''
+curl -sS --fail -X POST "https://pdaj8d5bm9hcckmkjbpkoekpe8q5pedp.openapi-sj.sii.edu.cn/v1/chat/completions" \
+    -H "Content-Type: application/json" \
+    -H "Authorization: Bearer 2uuD5+89UvtRc4nCn5ZMjQyArLh37ndg3Q5fMeZl7p0=" \
+    -d '{
+      "model": "qwen397",
+        "stream": true,
+      "messages": [
+        { "role": "user", "content": "hi" }
+      ]
+    }'
+        ''',
+    model_alias="qwen3.5-397b",
+)
+
+qwenbck = '''
+
 curl -sS --fail -X POST "https://api.agicto.cn/v1/chat/completions" \
     -H "Content-Type: application/json" \
     -H "Authorization: Bearer sk-gkYa8UuT55XckVX3SGFsamidZMTzDfismSCU9i3YWJB8hs2S" \
@@ -380,13 +396,8 @@ curl -sS --fail -X POST "https://api.agicto.cn/v1/chat/completions" \
         "messages": [
         { "role": "user", "content": "hi" }
       ]
-    }'
-
-        ''',
-    model_alias="qwen3.5-397b",
-)
-
-
+    }'''
+pdaj8d5bm9hcckmkjbpkoekpe8q5pedp
 kimi_vl_a_3_b_instruct = ApiConfig.from_curl(
 
 '''
