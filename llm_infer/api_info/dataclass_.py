@@ -24,33 +24,33 @@ class ApiConfig:
 
     @classmethod
     def from_env(
-        cls,
-        *,
-        defaults: "ApiConfig",
-        url_env: Optional[str]=None,
-        key_env: Optional[str]=None,
-        model_env: Optional[str]=None,
+            cls,
+            *,
+            defaults: "ApiConfig",
+            url_env: Optional[str] = None,
+            key_env: Optional[str] = None,
+            model_env: Optional[str] = None,
     ) -> "ApiConfig":
         def env_or_default(name: str, default: str) -> str:
             value = os.environ.get(name, "").strip() if name else None
             return value if value else default
 
         return cls(
-            base_url=env_or_default(url_env, defaults.base_url),
-            api_key=env_or_default(key_env, defaults.api_key),
-            model=env_or_default(model_env, defaults.model),
-            # keep the display alias from defaults (env only overrides the real model).
-            model_alias=defaults.model_alias,
-            multimodal=defaults.multimodal,
+                base_url=env_or_default(url_env, defaults.base_url),
+                api_key=env_or_default(key_env, defaults.api_key),
+                model=env_or_default(model_env, defaults.model),
+                # keep the display alias from defaults (env only overrides the real model).
+                model_alias=defaults.model_alias,
+                multimodal=defaults.multimodal,
         )
 
     @classmethod
     def from_curl(
-        cls,
-        curl: str,
-        *,
-        model_alias: Optional[str] = None,
-        multimodal: bool = False,
+            cls,
+            curl: str,
+            *,
+            model_alias: Optional[str] = None,
+            multimodal: bool = False,
     ) -> "ApiConfig":
         """Build an ApiConfig from a curl command (inverse of render_curl).
 
@@ -64,7 +64,7 @@ class ApiConfig:
         # Prefer the chat/completions endpoint; fall back to the first http(s)
         # URL in the command. Accepts single- or double-quoted or bare URLs.
         url_match = re.search(r'https?://\S*?/chat/completions', curl) \
-            or re.search(r'''https?://[^\s'"]+''', curl)
+                    or re.search(r'''https?://[^\s'"]+''', curl)
         if not url_match:
             raise ValueError("from_curl: 找不到请求 URL")
         url = url_match.group(0)
@@ -72,15 +72,15 @@ class ApiConfig:
 
         # ── Authorization header → api_key ───────────────────────────────
         key_match = re.search(
-            r'''Authorization:\s*Bearer\s+([^\s'"]+)''', curl, re.IGNORECASE
+                r'''Authorization:\s*Bearer\s+([^\s'"]+)''', curl, re.IGNORECASE
         )
         api_key = key_match.group(1) if key_match else ""
 
         # ── -d / --data body → model ─────────────────────────────────────
         body_match = re.search(
-            r'''(?:-d|--data(?:-raw|-binary)?)\s+(['"])(.*?)\1''',
-            curl,
-            re.DOTALL,
+                r'''(?:-d|--data(?:-raw|-binary)?)\s+(['"])(.*?)\1''',
+                curl,
+                re.DOTALL,
         )
         if not body_match:
             raise ValueError("from_curl: 找不到 -d 请求体")
@@ -90,12 +90,13 @@ class ApiConfig:
             raise ValueError(f"from_curl: 无法从请求体解析 model: {error}")
 
         return cls(
-            base_url=base_url,
-            api_key=api_key,
-            model=model,
-            model_alias=model_alias,
-            multimodal=multimodal,
+                base_url=base_url,
+                api_key=api_key,
+                model=model,
+                model_alias=model_alias,
+                multimodal=multimodal,
         )
+
 
 # @dataclass
 # class APIInfo(object):
@@ -104,150 +105,142 @@ class ApiConfig:
 #     apikey: str
 
 DEFAULT_1T_BASELINE_API = ApiConfig.from_env(
-    defaults=ApiConfig(
-        # https://qz.sii.edu.cn/jobs/modelDeplayDetail/sv-53234a68-283c-482d-ae93-2f11c0701f49?spaceId=ws-9dcc0e1f-80a4-4af2-bc2f-0e352e7b17e6
-        base_url="https://qobqj89deqk5chm9heeqm59eo8dpekkg.openapi-qb-ai.sii.edu.cn/v1",
-        api_key=SII_API_KEY,
-        model="Kimi-K2.6",
-    ),
-    url_env="DEFAULT_1T_BASELINE_BASE_URL",
-    key_env="DEFAULT_1T_BASELINE_API_KEY",
-    model_env="DEFAULT_1T_BASELINE_MODEL",
+        defaults=ApiConfig(
+                # https://qz.sii.edu.cn/jobs/modelDeplayDetail/sv-53234a68-283c-482d-ae93-2f11c0701f49?spaceId=ws-9dcc0e1f-80a4-4af2-bc2f-0e352e7b17e6
+                base_url="https://qobqj89deqk5chm9heeqm59eo8dpekkg.openapi-qb-ai.sii.edu.cn/v1",
+                api_key=SII_API_KEY,
+                model="Kimi-K2.6",
+        ),
+        url_env="DEFAULT_1T_BASELINE_BASE_URL",
+        key_env="DEFAULT_1T_BASELINE_API_KEY",
+        model_env="DEFAULT_1T_BASELINE_MODEL",
 )
-
 
 DEFAULT_4B_INNOSPARK_API = ApiConfig.from_env(
-    defaults=ApiConfig(
-        base_url="https://e8p5ocom8hcgcecckoc8jbhhohqhahhg.openapi-qb.sii.edu.cn/v1",
-        api_key=SII_API_KEY,
-        model="Qwen3-4B-Instruct-2507",
-    ),
-    url_env="DEFAULT_4B_INNOSPARK_BASE_URL",
-    key_env="DEFAULT_4B_INNOSPARK_API_KEY",
-    model_env="DEFAULT_4B_INNOSPARK_MODEL",
+        defaults=ApiConfig(
+                base_url="https://e8p5ocom8hcgcecckoc8jbhhohqhahhg.openapi-qb.sii.edu.cn/v1",
+                api_key=SII_API_KEY,
+                model="Qwen3-4B-Instruct-2507",
+        ),
+        url_env="DEFAULT_4B_INNOSPARK_BASE_URL",
+        key_env="DEFAULT_4B_INNOSPARK_API_KEY",
+        model_env="DEFAULT_4B_INNOSPARK_MODEL",
 )
-
 
 DEFAULT_4B_BASELINE_API = ApiConfig.from_env(
-    defaults=ApiConfig(
-        # https://qz.sii.edu.cn/jobs/modelDeplayDetail/sv-667f46c5-314e-46ac-87e8-9ee38d91fab3?spaceId=ws-33f55cbb-1e6b-4b37-b69d-3b52568e0a61
-        base_url="https://eeg5ceodb9cqcekohgqhjqqbhpj95kmb.openapi-qb.sii.edu.cn/v1",
-        api_key=SII_API_KEY,
-        model="Qwen3-4B-Instruct-2507-Official",
-    ),
-    url_env="DEFAULT_4B_BASELINE_BASE_URL",
-    key_env="DEFAULT_4B_BASELINE_API_KEY",
-    model_env="DEFAULT_4B_BASELINE_MODEL",
+        defaults=ApiConfig(
+                # https://qz.sii.edu.cn/jobs/modelDeplayDetail/sv-667f46c5-314e-46ac-87e8-9ee38d91fab3?spaceId=ws-33f55cbb-1e6b-4b37-b69d-3b52568e0a61
+                base_url="https://eeg5ceodb9cqcekohgqhjqqbhpj95kmb.openapi-qb.sii.edu.cn/v1",
+                api_key=SII_API_KEY,
+                model="Qwen3-4B-Instruct-2507-Official",
+        ),
+        url_env="DEFAULT_4B_BASELINE_BASE_URL",
+        key_env="DEFAULT_4B_BASELINE_API_KEY",
+        model_env="DEFAULT_4B_BASELINE_MODEL",
 )
-
 
 DEFAULT_32B_INNOSPARK_API = ApiConfig.from_env(
-    defaults=ApiConfig(
-        # https://qz.sii.edu.cn/jobs/modelDeplayDetail/sv-8c4d814f-5b59-4db8-9e7f-0a652019c6c4?spaceId=ws-33f55cbb-1e6b-4b37-b69d-3b52568e0a61
-        base_url="https://hocph9c5dmdjcpmhjqg58keda89joeoc.openapi-qb.sii.edu.cn/v1",
-        api_key=SII_API_KEY,
-        model="Qwen3-32B-ceval",
-    ),
-    url_env="DEFAULT_1T_INNOSPARK_BASE_URL",
-    key_env="DEFAULT_1T_INNOSPARK_API_KEY",
-    model_env="DEFAULT_1T_INNOSPARK_MODEL",
+        defaults=ApiConfig(
+                # https://qz.sii.edu.cn/jobs/modelDeplayDetail/sv-8c4d814f-5b59-4db8-9e7f-0a652019c6c4?spaceId=ws-33f55cbb-1e6b-4b37-b69d-3b52568e0a61
+                base_url="https://hocph9c5dmdjcpmhjqg58keda89joeoc.openapi-qb.sii.edu.cn/v1",
+                api_key=SII_API_KEY,
+                model="Qwen3-32B-ceval",
+        ),
+        url_env="DEFAULT_1T_INNOSPARK_BASE_URL",
+        key_env="DEFAULT_1T_INNOSPARK_API_KEY",
+        model_env="DEFAULT_1T_INNOSPARK_MODEL",
 )
-
 
 DEFAULT_32B_OFFICIAL_API = ApiConfig.from_env(
-    defaults=ApiConfig(
-        # https://qz.sii.edu.cn/jobs/modelDeplayDetail/sv-1f4ffff2-be2a-43d5-bffd-e2dabcf6190e?spaceId=ws-9dcc0e1f-80a4-4af2-bc2f-0e352e7b17e6
-        base_url="https://95c5555amqakcbpdm55pqapkmo5e9j8q.openapi-qb.sii.edu.cn/v1",
-        api_key=SII_API_KEY,
-        model="Qwen3-32B",
-    ),
-    url_env="DEFAULT_1T_INNOSPARK_BASE_URL",
-    key_env="DEFAULT_1T_INNOSPARK_API_KEY",
-    model_env="DEFAULT_1T_INNOSPARK_MODEL",
+        defaults=ApiConfig(
+                # https://qz.sii.edu.cn/jobs/modelDeplayDetail/sv-1f4ffff2-be2a-43d5-bffd-e2dabcf6190e?spaceId=ws-9dcc0e1f-80a4-4af2-bc2f-0e352e7b17e6
+                base_url="https://95c5555amqakcbpdm55pqapkmo5e9j8q.openapi-qb.sii.edu.cn/v1",
+                api_key=SII_API_KEY,
+                model="Qwen3-32B",
+        ),
+        url_env="DEFAULT_1T_INNOSPARK_BASE_URL",
+        key_env="DEFAULT_1T_INNOSPARK_API_KEY",
+        model_env="DEFAULT_1T_INNOSPARK_MODEL",
 )
-
 
 DEFAULT_1T_INNOSPARK_API = ApiConfig.from_env(
-    defaults=ApiConfig(
-        # https://qz.sii.edu.cn/jobs/modelDeplayDetail/sv-9833105f-d358-4cac-bc0e-eb9c95af3469?spaceId=ws-33f55cbb-1e6b-4b37-b69d-3b52568e0a61
-        base_url="https://jhbb98d5pbdhcokomo8qqmjojdk5bcej.openapi-qb.sii.edu.cn/v1",
-        api_key=SII_API_KEY,
-        model="kimi",
-        model_alias='Innospark-1T',
-    ),
-    url_env="DEFAULT_1T_INNOSPARK_BASE_URL",
-    key_env="DEFAULT_1T_INNOSPARK_API_KEY",
-    model_env="DEFAULT_1T_INNOSPARK_MODEL",
+        defaults=ApiConfig(
+                # https://qz.sii.edu.cn/jobs/modelDeplayDetail/sv-9833105f-d358-4cac-bc0e-eb9c95af3469?spaceId=ws-33f55cbb-1e6b-4b37-b69d-3b52568e0a61
+                base_url="https://jhbb98d5pbdhcokomo8qqmjojdk5bcej.openapi-qb.sii.edu.cn/v1",
+                api_key=SII_API_KEY,
+                model="kimi",
+                model_alias='Innospark-1T',
+        ),
+        url_env="DEFAULT_1T_INNOSPARK_BASE_URL",
+        key_env="DEFAULT_1T_INNOSPARK_API_KEY",
+        model_env="DEFAULT_1T_INNOSPARK_MODEL",
 )
 
-
 DEFAULT_INNOSPARK_API = ApiConfig.from_env(
-    defaults=DEFAULT_1T_INNOSPARK_API,
-    url_env="DEFAULT_INNOSPARK_BASE_URL",
-    key_env="DEFAULT_INNOSPARK_API_KEY",
-    model_env="DEFAULT_INNOSPARK_MODEL",
+        defaults=DEFAULT_1T_INNOSPARK_API,
+        url_env="DEFAULT_INNOSPARK_BASE_URL",
+        key_env="DEFAULT_INNOSPARK_API_KEY",
+        model_env="DEFAULT_INNOSPARK_MODEL",
 )
 
 DEFAULT_BASELINE_API = DEFAULT_1T_BASELINE_API
 
-
 claude_opus_4_6_API = ApiConfig.from_env(
-    defaults=ApiConfig(
-        base_url="https://api.innospark.cn/v1",
-        api_key="",
-        model='claude-opus-4-6',
-        multimodal=True,
-    ),
-    url_env="GEMINI_BASE_URL",
-    key_env="LLM_API_KEY",
-    model_env="GEMINI_MODEL",
+        defaults=ApiConfig(
+                base_url="https://api.innospark.cn/v1",
+                api_key="",
+                model='claude-opus-4-6',
+                multimodal=True,
+        ),
+        url_env="GEMINI_BASE_URL",
+        key_env="LLM_API_KEY",
+        model_env="GEMINI_MODEL",
 )
 
 GEMINI_2_0_FLASH_API = ApiConfig.from_env(
-    defaults=ApiConfig(
-        base_url="https://api.innospark.cn/v1",
-        api_key="",
-        model="gemini-2.0-flash",
-        multimodal=True,
-    ),
-    url_env="GEMINI_BASE_URL",
-    key_env="LLM_API_KEY",
-    model_env="GEMINI_MODEL",
+        defaults=ApiConfig(
+                base_url="https://api.innospark.cn/v1",
+                api_key="",
+                model="gemini-2.0-flash",
+                multimodal=True,
+        ),
+        url_env="GEMINI_BASE_URL",
+        key_env="LLM_API_KEY",
+        model_env="GEMINI_MODEL",
 )
 
 GEMINI_2_5_FLASH_API = ApiConfig.from_env(
-    defaults=ApiConfig(
-        base_url="https://api.innospark.cn/v1",
-        api_key="",
-        model="gemini-2.5-flash",
-        multimodal=True,
-    ),
-    url_env="GEMINI_BASE_URL",
-    key_env="LLM_API_KEY",
-    model_env="GEMINI_MODEL",
+        defaults=ApiConfig(
+                base_url="https://api.innospark.cn/v1",
+                api_key="",
+                model="gemini-2.5-flash",
+                multimodal=True,
+        ),
+        url_env="GEMINI_BASE_URL",
+        key_env="LLM_API_KEY",
+        model_env="GEMINI_MODEL",
 )
 
 doubao_seed_2_0_lite_API = ApiConfig.from_env(
-    defaults=ApiConfig(
-        base_url="https://api.innospark.cn/v1",
-        api_key="",
-        model="doubao-seed-2-0-lite-260215",
-    ),
-    key_env="LLM_API_KEY",
+        defaults=ApiConfig(
+                base_url="https://api.innospark.cn/v1",
+                api_key="",
+                model="doubao-seed-2-0-lite-260215",
+        ),
+        key_env="LLM_API_KEY",
 )
-
 
 DEFAULT_JUDGE_API = GEMINI_2_5_FLASH_API
 GLM51FP8_API = ApiConfig.from_env(
-    defaults=ApiConfig(
-        # https://qz.sii.edu.cn/jobs/modelDeplayDetail/sv-d46fd98b-a669-4acb-92b6-85966acbf383?spaceId=ws-33f55cbb-1e6b-4b37-b69d-3b52568e0a61
-        base_url="https://pce5pjhmkeejckomjamehdjeekom5bhb.openapi-qb.sii.edu.cn/v1",
-        api_key=SII_API_KEY,
-        model="GLM-5.1-FP8",
-    ),
-    url_env="GLM51FP8_BASE_URL",
-    key_env="GLM51FP8_API_KEY",
-    model_env="GLM51FP8_MODEL",
+        defaults=ApiConfig(
+                # https://qz.sii.edu.cn/jobs/modelDeplayDetail/sv-d46fd98b-a669-4acb-92b6-85966acbf383?spaceId=ws-33f55cbb-1e6b-4b37-b69d-3b52568e0a61
+                base_url="https://pce5pjhmkeejckomjamehdjeekom5bhb.openapi-qb.sii.edu.cn/v1",
+                api_key=SII_API_KEY,
+                model="GLM-5.1-FP8",
+        ),
+        url_env="GLM51FP8_BASE_URL",
+        key_env="GLM51FP8_API_KEY",
+        model_env="GLM51FP8_MODEL",
 )
 # ---------------------------------------------------------------------------
 # Configs ported from TeaCH (scripts/inference/api_configs.py).
@@ -260,42 +253,44 @@ GLM51FP8_API = ApiConfig.from_env(
 # ---------------------------------------------------------------------------
 
 DEEPSEEK_CHAT_API = ApiConfig.from_env(
-    defaults=ApiConfig(
-        base_url="https://api.deepseek.com",
-        api_key="",
-        model="deepseek-chat",
-        multimodal=False,
-    ),
-    url_env="DEEPSEEK_BASE_URL",
-    key_env="DEEPSEEK_API_KEY",
-    model_env="DEEPSEEK_CHAT_MODEL",
+        defaults=ApiConfig(
+                base_url="https://api.deepseek.com",
+                api_key="",
+                model="deepseek-chat",
+                multimodal=False,
+        ),
+        url_env="DEEPSEEK_BASE_URL",
+        key_env="DEEPSEEK_API_KEY",
+        model_env="DEEPSEEK_CHAT_MODEL",
 )
 
 DEEPSEEK_REASONER_API = ApiConfig.from_env(
-    defaults=ApiConfig(
-        base_url="https://api.deepseek.com",
-        api_key="",
-        model="deepseek-reasoner",
-        multimodal=False,
-    ),
-    url_env="DEEPSEEK_BASE_URL",
-    key_env="DEEPSEEK_API_KEY",
-    model_env="DEEPSEEK_REASONER_MODEL",
+        defaults=ApiConfig(
+                base_url="https://api.deepseek.com",
+                api_key="",
+                model="deepseek-reasoner",
+                multimodal=False,
+        ),
+        url_env="DEEPSEEK_BASE_URL",
+        key_env="DEEPSEEK_API_KEY",
+        model_env="DEEPSEEK_REASONER_MODEL",
 )
 
-KIMI_K25_API = ApiConfig.from_curl('''
-curl -sS --fail -X POST "https://eojmhg88q8ojcg98kd5q8geoqeeeag95.openapi-sj.sii.edu.cn/v1/chat/completions" \
-    -H "Content-Type: application/json" \
-    -H "Authorization: Bearer 2uuD5+89UvtRc4nCn5ZMjQyArLh37ndg3Q5fMeZl7p0=" \
-    -d '{
-        "model": "kimi",
-        "stream": true,
-        "messages": [
-        { "role": "user", "content": "hi" }
-      ]
-    }'
-
-''', model_alias='Kimi-K25')
+KIMI_K25_API = ApiConfig.from_curl(
+        '''
+    curl -sS --fail -X POST "https://eojmhg88q8ojcg98kd5q8geoqeeeag95.openapi-sj.sii.edu.cn/v1/chat/completions" \
+        -H "Content-Type: application/json" \
+        -H "Authorization: Bearer 2uuD5+89UvtRc4nCn5ZMjQyArLh37ndg3Q5fMeZl7p0=" \
+        -d '{
+            "model": "kimi",
+            "stream": true,
+            "messages": [
+            { "role": "user", "content": "hi" }
+          ]
+        }'
+''',
+        model_alias='Kimi-K25'
+)
 
 llama_3_2_11_b_vision_instruct = ApiConfig.from_curl('''
 curl -sS --fail -X POST "https://gk5b5booehhbce9jjcpj9e9epqm5agdd.openapi-sj.sii.edu.cn/v1/chat/completions" \
@@ -309,7 +304,9 @@ curl -sS --fail -X POST "https://gk5b5booehhbce9jjcpj9e9epqm5agdd.openapi-sj.sii
       ]
     }'
 
-''', model_alias='Llama-3.2-11B-Vision-Instruct')
+''',
+                                                     # https://qz.sii.edu.cn/jobs/modelDeplayDetail/sv-7af3f3cc-6883-4619-94d9-1616debf2755?spaceId=ws-803be1bb-da46-40d8-ae72-df77df9112ca
+                                                     model_alias='Llama-3.2-11B-Vision-Instruct')
 
 KIMI_K251_API = ApiConfig.from_curl('''
 curl -sS --fail -X POST "https://api.agicto.cn/v1/chat/completions" \
@@ -325,49 +322,65 @@ curl -sS --fail -X POST "https://api.agicto.cn/v1/chat/completions" \
 
 ''', model_alias='Kimi-K251')
 
-
 MINIMAX_M27_API = ApiConfig.from_env(
-    defaults=ApiConfig(
-        base_url="https://bcedpgqjghjpcjkjjchem5oaopkoqbba.openapi-qb-ai.sii.edu.cn/v1",
-        api_key="",
-        model="MiniMax-M2.7",
-        multimodal=True,
-    ),
-    url_env="MINIMAX_M27_BASE_URL",
-    key_env="KIMI_KEY_PUBLIC",
-    model_env="MINIMAX_M27_MODEL",
+        defaults=ApiConfig(
+                base_url="https://bcedpgqjghjpcjkjjchem5oaopkoqbba.openapi-qb-ai.sii.edu.cn/v1",
+                api_key="",
+                model="MiniMax-M2.7",
+                multimodal=True,
+        ),
+        url_env="MINIMAX_M27_BASE_URL",
+        key_env="KIMI_KEY_PUBLIC",
+        model_env="MINIMAX_M27_MODEL",
 )
 
 GLM5_API = ApiConfig.from_env(
-    defaults=ApiConfig(
-        base_url="https://5ach5c5dabhcceg5m8d8h5ahq9c8pmh5.openapi-qb-ai.sii.edu.cn/v1",
-        api_key="",
-        model="glm-5",
-        multimodal=True,
-    ),
-    url_env="GLM5_BASE_URL",
-    key_env="KIMI_KEY_PUBLIC",
-    model_env="GLM5_MODEL",
+        defaults=ApiConfig(
+                base_url="https://5ach5c5dabhcceg5m8d8h5ahq9c8pmh5.openapi-qb-ai.sii.edu.cn/v1",
+                api_key="",
+                model="glm-5",
+                multimodal=True,
+        ),
+        url_env="GLM5_BASE_URL",
+        key_env="KIMI_KEY_PUBLIC",
+        model_env="GLM5_MODEL",
+)
+
+GLM46V_OFFICIAL_API = ApiConfig.from_curl(
+        #     支持这种v4的custom url
+        '''
+        
+    curl -sS --fail -X POST "https://open.bigmodel.cn/api/paas/v4/chat/completions" \
+        -H "Content-Type: application/json" \
+        -H "Authorization: Bearer ede4a85f26aa42e7a17a6379d0134dd7.WNvvHwlVkhqxg8Gt" \
+        -d '{
+          "model": "glm-4.6v",
+            "stream": true,
+          "messages": [
+            { "role": "user", "content": "你是什么模型" }
+          ]
+        }'
+    
+        ''', model_alias="glm-4.6v1"
 )
 
 GLM46V_API = ApiConfig.from_curl(
-    #     支持这种v4的custom url
-    '''
-    
-curl -sS --fail -X POST "https://open.bigmodel.cn/api/paas/v4/chat/completions" \
+        #     https://qz.sii.edu.cn/jobs/modelDeplayDetail/sv-3d53e366-2716-4a44-ac8e-0ba13ee808f2?spaceId=ws-803be1bb-da46-40d8-ae72-df77df9112ca
+        '''
+        
+curl -sS --fail -X POST "https://bpdbqbeeag9eckcckohq8mk9bqqh8h5a.openapi-sj.sii.edu.cn/v1/chat/completions" \
     -H "Content-Type: application/json" \
-    -H "Authorization: Bearer ede4a85f26aa42e7a17a6379d0134dd7.WNvvHwlVkhqxg8Gt" \
+    -H "Authorization: Bearer 2uuD5+89UvtRc4nCn5ZMjQyArLh37ndg3Q5fMeZl7p0=" \
     -d '{
-      "model": "glm-4.6v",
+      "model": "glm",
         "stream": true,
       "messages": [
-        { "role": "user", "content": "你是什么模型" }
+        { "role": "user", "content": "hi" }
       ]
     }'
-
-    ''',model_alias="glm-4.6v"
+    
+        ''', model_alias="glm-4.6v"
 )
-
 
 QWEN35_397B_API = ApiConfig.from_curl(
         '''
@@ -382,7 +395,7 @@ curl -sS --fail -X POST "https://pdaj8d5bm9hcckmkjbpkoekpe8q5pedp.openapi-sj.sii
       ]
     }'
         ''',
-    model_alias="qwen3.5-397b",
+        model_alias="qwen3.5-397b",
 )
 
 qwenbck = '''
@@ -398,37 +411,38 @@ curl -sS --fail -X POST "https://api.agicto.cn/v1/chat/completions" \
       ]
     }'''
 kimi_vl_a_3_b_instruct = ApiConfig.from_curl(
-
-'''
-curl -sS --fail -X POST "https://8ooeepbkqbe5cjgbmdajghm9peho8b8c.openapi-sj.sii.edu.cn/v1/chat/completions" \
-    -H "Content-Type: application/json" \
-    -H "Authorization: Bearer 2uuD5+89UvtRc4nCn5ZMjQyArLh37ndg3Q5fMeZl7p0=" \
-    -d '{
-      "model": "Kimi-VL-A3B-Instruct",
-        "stream": true,
-      "messages": [
-        { "role": "user", "content": "hi" }
-      ]
-    }'
-''',model_alias = 'Kimi-VL-A3B-Instruct'
+        # https://qz.sii.edu.cn/jobs/modelDeplayDetail/sv-990f27b2-0636-43e7-b4b2-0e3000594782
+        '''
+        curl -sS --fail -X POST "https://8ooeepbkqbe5cjgbmdajghm9peho8b8c.openapi-sj.sii.edu.cn/v1/chat/completions" \
+            -H "Content-Type: application/json" \
+            -H "Authorization: Bearer 2uuD5+89UvtRc4nCn5ZMjQyArLh37ndg3Q5fMeZl7p0=" \
+            -d '{
+              "model": "Kimi-VL-A3B-Instruct",
+                "stream": true,
+              "messages": [
+                { "role": "user", "content": "hi" }
+              ]
+            }'
+        ''', model_alias='Kimi-VL-A3B-Instruct'
 )
 
 mi_mo_vl_7_b_sft = ApiConfig.from_curl(
-
-'''
-curl -sS --fail -X POST "https://kjjmghgmdkeacmgqhpbocjjdkdmk5hpg.openapi-sj.sii.edu.cn/v1/chat/completions" \
-    -H "Content-Type: application/json" \
-    -H "Authorization: Bearer 2uuD5+89UvtRc4nCn5ZMjQyArLh37ndg3Q5fMeZl7p0=" \
-    -d '{
-      "model": "MiMo-VL-7B-SFT",
-        "stream": true,
-      "messages": [
-        { "role": "user", "content": "hi" }
-      ]
-    }'
-''',model_alias = 'MiMo-VL-7B-SFT'
+        # https://qz.sii.edu.cn/jobs/modelDeplayDetail/sv-a99b787b-5a62-4b7e-8d3c-4995a5baf8d7
+        '''
+        curl -sS --fail -X POST "https://kjjmghgmdkeacmgqhpbocjjdkdmk5hpg.openapi-sj.sii.edu.cn/v1/chat/completions" \
+            -H "Content-Type: application/json" \
+            -H "Authorization: Bearer 2uuD5+89UvtRc4nCn5ZMjQyArLh37ndg3Q5fMeZl7p0=" \
+            -d '{
+              "model": "MiMo-VL-7B-SFT",
+                "stream": true,
+              "messages": [
+                { "role": "user", "content": "hi" }
+              ]
+            }'
+        ''', model_alias='MiMo-VL-7B-SFT'
 )
 step_3_vl_10_b = ApiConfig.from_curl(
+        # https://qz.sii.edu.cn/jobs/modelDeplayDetail/sv-372be72f-7c79-4317-be62-c8808583755b?spaceId=ws-803be1bb-da46-40d8-ae72-df77df9112ca
         '''
 curl -sS --fail -X POST "https://bgamqga5gogjcb9gmqeaohh8hdhbgddm.openapi-sj.sii.edu.cn/v1/chat/completions" \
     -H "Content-Type: application/json" \
@@ -444,7 +458,6 @@ curl -sS --fail -X POST "https://bgamqga5gogjcb9gmqeaohh8hdhbgddm.openapi-sj.sii
         '''
 )
 
-
 qwen_3_5_4_b = ApiConfig.from_curl(
         '''
 curl -sS --fail -X POST "https://mopmqcgg8j9qccc5m8ppqchgpeadkcam.openapi-sj.sii.edu.cn/v1/chat/completions" \
@@ -457,12 +470,12 @@ curl -sS --fail -X POST "https://mopmqcgg8j9qccc5m8ppqchgpeadkcam.openapi-sj.sii
         { "role": "user", "content": "hi" }
       ]
     }'
-        
         '''
+        # https://qz.sii.edu.cn/jobs/modelDeplayDetail/sv-bcdbe477-091e-444f-b0dd-e487d625a42b
 )
 
-
 intern_vl_3_5_8_b = ApiConfig.from_curl(
+        # https://qz.sii.edu.cn/jobs/modelDeplayDetail/sv-ec5f764b-85ab-48b1-a51f-dedfedc50172
         '''
 curl -sS --fail -X POST "https://qod5gecmhdkmchm9kd95pqp5qpod89ga.openapi-sj.sii.edu.cn/v1/chat/completions" \
     -H "Content-Type: application/json" \
@@ -479,6 +492,7 @@ curl -sS --fail -X POST "https://qod5gecmhdkmchm9kd95pqp5qpod89ga.openapi-sj.sii
 )
 
 intern_vl_3_4_b = ApiConfig.from_curl(
+        # https://qz.sii.edu.cn/jobs/modelDeplayDetail/sv-dd27eb9b-43db-4cf3-8d7e-84cb8e59608d
         '''
 curl -sS --fail -X POST "https://ppagqmjmcbpmco5bhpgqhcomhqdje8hp.openapi-sj.sii.edu.cn/v1/chat/completions" \
     -H "Content-Type: application/json" \
@@ -494,8 +508,8 @@ curl -sS --fail -X POST "https://ppagqmjmcbpmco5bhpgqhcomhqdje8hp.openapi-sj.sii
         '''
 )
 
-
 intern_vl_3_2_b = ApiConfig.from_curl(
+        # https://qz.sii.edu.cn/jobs/modelDeplayDetail/sv-078b553d-8076-4608-aefa-3ca848428ccd
         '''
 curl -sS --fail -X POST "https://8ghmddbph8gece8hkq5kbokhchcahoop.openapi-sj.sii.edu.cn/v1/chat/completions" \
     -H "Content-Type: application/json" \
@@ -525,9 +539,11 @@ curl -sS --fail -X POST "https://9hj8ceppcaemckkmjk8q98pj995e558a.openapi-sj.sii
     }'
         
         '''
+        # https://qz.sii.edu.cn/jobs/modelDeplayDetail/sv-189046dd-426b-4aab-9a0e-10d911f6ff02
 )
 
 ministral_3_14_b = ApiConfig.from_curl(
+        # https://qz.sii.edu.cn/jobs/modelDeplayDetail/sv-2f2a8f6a-a6c3-472e-bbd5-31d927caf3e3?spaceId=ws-803be1bb-da46-40d8-ae72-df77df9112ca
         '''
 curl -sS --fail -X POST "https://a5akh5ekkeobcgaqmmpdb9pjagok5bqb.openapi-sj.sii.edu.cn/v1/chat/completions" \
     -H "Content-Type: application/json" \
@@ -542,8 +558,8 @@ curl -sS --fail -X POST "https://a5akh5ekkeobcgaqmmpdb9pjagok5bqb.openapi-sj.sii
         '''
 )
 
-
 ministral_3_3_b = ApiConfig.from_curl(
+        # https://qz.sii.edu.cn/jobs/modelDeplayDetail/sv-896b6b78-3fbd-48ba-913f-47b822f38539?spaceId=ws-803be1bb-da46-40d8-ae72-df77df9112ca
         '''
 curl -sS --fail -X POST "https://hjememghb5mpchmkj9b5cgmhaa5bhdbj.openapi-sj.sii.edu.cn/v1/chat/completions" \
     -H "Content-Type: application/json" \
@@ -558,8 +574,8 @@ curl -sS --fail -X POST "https://hjememghb5mpchmkj9b5cgmhaa5bhdbj.openapi-sj.sii
         '''
 )
 
-
 ministral_3_8_b = ApiConfig.from_curl(
+        # https://qz.sii.edu.cn/jobs/modelDeplayDetail/sv-e8993f53-b3d1-4c6f-95ae-2e590ca08384?spaceId=ws-803be1bb-da46-40d8-ae72-df77df9112ca
         '''
 curl -sS --fail -X POST "https://qhjjb5dbmbp9coe5jdkqaqdj8ok8hbhc.openapi-sj.sii.edu.cn/v1/chat/completions" \
     -H "Content-Type: application/json" \
@@ -574,8 +590,8 @@ curl -sS --fail -X POST "https://qhjjb5dbmbp9coe5jdkqaqdj8ok8hbhc.openapi-sj.sii
         '''
 )
 
-
 gemma_4_a_2_b_it = ApiConfig.from_curl(
+        # https://qz.sii.edu.cn/jobs/modelDeplayDetail/sv-f991b11d-8772-46e2-b8ca-8a81b8a21e88
         '''
 curl -sS --fail -X POST "https://5jj9m99phggaceqamhokhkh9mhka9qhh.openapi-sj.sii.edu.cn/v1/chat/completions" \
     -H "Content-Type: application/json" \
@@ -592,6 +608,7 @@ curl -sS --fail -X POST "https://5jj9m99phggaceqamhokhkh9mhka9qhh.openapi-sj.sii
 )
 
 gemma_4_31_b_it = ApiConfig.from_curl(
+        # https://qz.sii.edu.cn/jobs/modelDeplayDetail/sv-7a3f0206-bdd8-4a75-85e3-2bd8c67cb195
         '''
 curl -sS --fail -X POST "https://gkb58a8empphckgdhdqbamphoegom9jd.openapi-sj.sii.edu.cn/v1/chat/completions" \
     -H "Content-Type: application/json" \
@@ -608,6 +625,7 @@ curl -sS --fail -X POST "https://gkb58a8empphckgdhdqbamphoegom9jd.openapi-sj.sii
 )
 
 gemma_4_26_b_a_4_b_it = ApiConfig.from_curl(
+        # https://qz.sii.edu.cn/jobs/modelDeplayDetail/sv-ca2d14c5-4c2b-4b76-89d0-d75dbfa48405
         '''
 curl -sS --fail -X POST "https://okap9codcoamcmgehjp8pgdpm5kchc8d.openapi-sj.sii.edu.cn/v1/chat/completions" \
     -H "Content-Type: application/json" \
@@ -623,6 +641,7 @@ curl -sS --fail -X POST "https://okap9codcoamcmgehjp8pgdpm5kchc8d.openapi-sj.sii
         '''
 )
 gemma_4_12_b_it = ApiConfig.from_curl(
+        # https://qz.sii.edu.cn/jobs/modelDeplayDetail/sv-dae9e99d-4c24-4a53-a362-61b65d455047
         '''
 curl -sS --fail -X POST "https://pkqjqjjpcoacckdbkbeae9medpcdd8cg.openapi-sj.sii.edu.cn/v1/chat/completions" \
     -H "Content-Type: application/json" \
@@ -639,6 +658,7 @@ curl -sS --fail -X POST "https://pkqjqjjpcoacckdbkbeae9medpcdd8cg.openapi-sj.sii
 )
 
 molmo_2_8_b = ApiConfig.from_curl(
+        # https://qz.sii.edu.cn/jobs/modelDeplayDetail/sv-d02944f5-d71f-4fd4-ab70-5b42d5a878a4
         '''
 curl -sS --fail -X POST "https://p8ajcc5dpg95c5pckmg8dmcapdkhghkc.openapi-sj.sii.edu.cn/v1/chat/completions" \
     -H "Content-Type: application/json" \
@@ -654,6 +674,7 @@ curl -sS --fail -X POST "https://p8ajcc5dpg95c5pckmg8dmcapdkhghkc.openapi-sj.sii
         ''')
 
 phi_3_5_vision_instruct = ApiConfig.from_curl(
+        # https://qz.sii.edu.cn/jobs/modelDeplayDetail/sv-de2ec433-bb60-471a-9673-356602b107f5?spaceId=ws-803be1bb-da46-40d8-ae72-df77df9112ca
         '''
 curl -sS --fail -X POST "https://pqaqocbbmme8cg9kjegbbdee8am98g5d.openapi-sj.sii.edu.cn/v1/chat/completions" \
     -H "Content-Type: application/json" \
@@ -667,7 +688,6 @@ curl -sS --fail -X POST "https://pqaqocbbmme8cg9kjegbbdee8am98g5d.openapi-sj.sii
     }'
         
         ''')
-
 
 QWEN3_5_35B_API = ApiConfig.from_curl(
         # https://qz.sii.edu.cn/jobs/modelDeplayDetail/sv-c8dbb098-8a90-4e67-9950-4f34e330cd84?spaceId=ws-803be1bb-da46-40d8-ae72-df77df9112ca
@@ -683,7 +703,7 @@ QWEN3_5_35B_API = ApiConfig.from_curl(
         { "role": "user", "content": "write a poem in 3 words" }
       ]
     }'
-        ''',model_alias = 'qwen3.6-35b'
+        ''', model_alias='qwen3.6-35b'
 )
 
 QWEN3_6_35B_API = ApiConfig.from_curl(
@@ -700,39 +720,38 @@ QWEN3_6_35B_API = ApiConfig.from_curl(
         { "role": "user", "content": "write a poem in 3 words" }
       ]
     }'
-        ''',model_alias = 'qwen3.6-35b-latest'
+        ''', model_alias='qwen3.6-35b-latest'
 )
 
-
-
 QWEN3_27B_API = ApiConfig.from_curl(
-
-'''
-curl -sS --fail -X POST "https://hadpekkpkjekcd8gk5jdmgmc9qkg9ppc.openapi-sj.sii.edu.cn/v1/chat/completions" \
-    -H "Content-Type: application/json" \
-    -H "Authorization: Bearer 2uuD5+89UvtRc4nCn5ZMjQyArLh37ndg3Q5fMeZl7p0=" \
-    -d '{
-      "model": "qwen3.6-27b",
-        "stream": true,
-      "messages": [
-        { "role": "user", "content": "hi" }
-      ]
-    }'
-''',model_alias = 'qwen3.6-27b'
+        # https://qz.sii.edu.cn/jobs/modelDeplayDetail/sv-825d6aad-a96a-4507-af95-b7b41ea71dd4
+        '''
+        curl -sS --fail -X POST "https://hadpekkpkjekcd8gk5jdmgmc9qkg9ppc.openapi-sj.sii.edu.cn/v1/chat/completions" \
+            -H "Content-Type: application/json" \
+            -H "Authorization: Bearer 2uuD5+89UvtRc4nCn5ZMjQyArLh37ndg3Q5fMeZl7p0=" \
+            -d '{
+              "model": "qwen3.6-27b",
+                "stream": true,
+              "messages": [
+                { "role": "user", "content": "hi" }
+              ]
+            }'
+        ''', model_alias='qwen3.6-27b'
 )
 QWEN3_9B_API = ApiConfig.from_curl(
         # https://qz.sii.edu.cn/jobs/modelDeplayDetail/sv-aa43984b-be99-45f3-9651-bdd9ec9ce147?spaceId=ws-33f55cbb-1e6b-4b37-b69d-3b52568e0a61
         '''
-  curl -sS --fail -X POST "https://kkcbjhcmmqjjcd5bjed9mppjqojoq9cg.openapi-qb-ai.sii.edu.cn/v1/chat/completions" \
+  curl -sS --fail -X POST "https://aabk8ckjjmedchakjobaodp5jg8jkdda.openapi-sj.sii.edu.cn/v1/chat/completions" \
     -H "Content-Type: application/json" \
     -H "Authorization: Bearer 2uuD5+89UvtRc4nCn5ZMjQyArLh37ndg3Q5fMeZl7p0=" \
     -d '{
-      "model": "qwen",
+      "model": "qwen3.5-9b",
+      "stream": true,
       "messages": [
         { "role": "user", "content": "write a poem in 3 words" }
       ]
     }'
-        ''',model_alias = 'qwen3.5-9b'
+        ''', model_alias='qwen3.5-9b'
 )
 # Reverse mapping from a model name to its ApiConfig, so callers can look up the
 # full config (base_url / api_key) given just a model string. Built by scanning
@@ -757,29 +776,34 @@ for _name, _value in list(globals().items()):
 # of truth for "which models exist" and "is this model multimodal", so callers
 # (e.g. TeaCH run.py) no longer need their own MODEL_API_CONFIGS / MODELS table.
 # ---------------------------------------------------------------------------
+gemini_3_flash_preview = "gemini-3-flash-preview"
+gemini___pro_preview = "gemini-3.1-pro-preview"
+claude_opus_4_6 = "claude-opus-4-6"
+claude_sonnet_4_6 = "claude-sonnet-4-6"
+gpt__5_2 = "gpt-5.2"
 _PROXY_MULTIMODAL: Dict[str, bool] = {
-    "mock": True,
-    "claude-haiku-4-5": True,
-    "claude-sonnet-4-5": True,
-    "claude-sonnet-4-6": True,
-    "claude-opus-4-5": True,
-    "claude-opus-4-6": True,
-    "gemini-2.0-flash": True,
-    "gemini-2.5-flash": True,
-    "gemini-2.5-pro": True,
-    "gemini-3-flash-preview": True,
-    "gemini-3-pro-preview": True,
-    "gemini-3.1-pro-preview": True,
-    "gpt-4o": True,
-    "gpt-4.1": True,
-    "gpt-5": True,
-    "gpt-5.2": True,
-    "doubao-seed-1-6-thinking-250715": False,
+        "mock"                           : True,
+        "claude-haiku-4-5"               : True,
+        "claude-sonnet-4-5"              : True,
+        claude_sonnet_4_6                : True,
+        "claude-opus-4-5"                : True,
+        claude_opus_4_6                  : True,
+        "gemini-2.0-flash"               : True,
+        "gemini-2.5-flash"               : True,
+        "gemini-2.5-pro"                 : True,
+        gemini_3_flash_preview           : True,
+        "gemini-3-pro-preview"           : True,
+        gemini___pro_preview             : True,
+        "gpt-4o"                         : True,
+        "gpt-4.1"                        : True,
+        "gpt-5"                          : True,
+        gpt__5_2                           : True,
+        "doubao-seed-1-6-thinking-250715": False,
 }
 
 PROXY_MODEL_CONFIGS: Dict[str, ApiConfig] = {
-    _m: ApiConfig(base_url="", api_key="", model=_m, multimodal=_mm)
-    for _m, _mm in _PROXY_MULTIMODAL.items()
+        _m: ApiConfig(base_url="", api_key="", model=_m, multimodal=_mm)
+        for _m, _mm in _PROXY_MULTIMODAL.items()
 }
 
 # Register proxy models too; setdefault keeps any concrete config already mapped
@@ -815,7 +839,9 @@ def model_is_multimodal(model: str) -> bool:
     cfg = config_for_model(model)
     return bool(cfg.multimodal) if cfg is not None else False
 
+
 apiconfig_for_model = config_for_model
+
 
 # def apiconfig_for_model(model: str) -> ApiConfig:
 #     """Return the ApiConfig registered for `model`, or raise KeyError."""
@@ -846,10 +872,9 @@ def main():
     api = config_for_model('qwen3.5-397b')
     print('*' * 50 + f'''\n{api.api_key}\n^^^(doubao_seed_2_0_lite_API.api_key)^^^\n''' + '''\nat:\ndependencies/llm_evals/llm_common/llm_infer/api_info/dataclass_.py:396\n''' + '*' * 50)
 
-
     text = call_openai(LLMInferInputRecord(
-        prompt=os.environ.get("PROMPT", "write a paragraph with 3 words"),
-        api=api,
+            prompt=os.environ.get("PROMPT", "write a paragraph with 3 words"),
+            api=api,
             disable_thinking=True,
     ))
     print(text)
