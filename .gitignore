@@ -2,3 +2,4 @@
 tmp/
 *.pyc
 .DS_Store
+llm_infer/curl_latest.sh
