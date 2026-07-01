@@ -289,7 +289,7 @@ KIMI_K25_API = ApiConfig.from_curl(
           ]
         }'
 ''',
-        model_alias='Kimi-K251'
+        model_alias='Kimi-K25'
 )
 
 llama_3_2_11_b_vision_instruct = ApiConfig.from_curl('''
@@ -320,7 +320,7 @@ curl -sS --fail -X POST "https://api.agicto.cn/v1/chat/completions" \
       ]
     }'
 
-''', model_alias='Kimi-K25')
+''', model_alias='Kimi-K251')
 
 MINIMAX_M27_API = ApiConfig.from_env(
         defaults=ApiConfig(
