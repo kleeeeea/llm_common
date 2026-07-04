@@ -419,7 +419,7 @@ curl -sS --fail -X POST "https://qdg5pch8mqjhcckamchb9qhhjh9gkd8k.openapi-sj.sii
         ''',
         model_alias="qwen3.5-397b2",
 )
-QWEN35_397B_CURRENT = replace(QWEN35_397B_AGICTO_API, model_alias="qwen3.5-397b")
+QWEN35_397B_CURRENT = replace(QWEN35_397B_QZ_API, model_alias="qwen3.5-397b")
 
 KIMI_K25_CURRENT = replace(KIMI_K25_AGICTO_API, model_alias="Kimi-K25")
 
