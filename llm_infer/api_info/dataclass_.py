@@ -421,7 +421,7 @@ curl -sS --fail -X POST "https://qdg5pch8mqjhcckamchb9qhhjh9gkd8k.openapi-sj.sii
 )
 QWEN35_397B_CURRENT = replace(QWEN35_397B_QZ_API, model_alias="qwen3.5-397b")
 
-KIMI_K25_CURRENT = replace(KIMI_K25_AGICTO_API, model_alias="Kimi-K25")
+KIMI_K25_CURRENT = replace(KIMI_K25_QZ_API, model_alias="Kimi-K25")
 
 kimi_vl_a_3_b_instruct = ApiConfig.from_curl(
         # https://qz.sii.edu.cn/jobs/modelDeplayDetail/sv-990f27b2-0636-43e7-b4b2-0e3000594782
