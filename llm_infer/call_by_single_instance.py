@@ -369,8 +369,9 @@ def call_openai(
         disable_thinking=input_.disable_thinking,
     )
 
-    print('*' * 50 + f'''\n{input_.system_input}\n^^^(input_.system_input)^^^\n''' + '''\nat:\nllm_common/llm_infer/call.py:242\n''' + '*' * 50)
-    print('*' * 50 + f'''\n{input_.prompt}\n^^^(input_.prompt)^^^\n''' + '''\nat:\nllm_common/llm_infer/call.py:243\n''' + '*' * 50)
+    if input_.chat_completion_request.stream:
+        print('*' * 50 + f'''\n{input_.system_input}\n^^^(input_.system_input)^^^\n''' + '''\nat:\nllm_common/llm_infer/call.py:242\n''' + '*' * 50)
+        print('*' * 50 + f'''\n{input_.prompt}\n^^^(input_.prompt)^^^\n''' + '''\nat:\nllm_common/llm_infer/call.py:243\n''' + '*' * 50)
 
     # first test remote server healthiness using curl
     _check_server_health(input_.api.base_url, input_.api.api_key, timeout=min(input_.timeout or 10.0, 10.0))

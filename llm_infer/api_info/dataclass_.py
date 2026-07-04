@@ -2,6 +2,7 @@ import json
 import os
 import re
 from dataclasses import dataclass
+from dataclasses import replace
 from typing import Dict
 from typing import Optional
 
@@ -276,7 +277,7 @@ DEEPSEEK_REASONER_API = ApiConfig.from_env(
         model_env="DEEPSEEK_REASONER_MODEL",
 )
 
-KIMI_K25_API = ApiConfig.from_curl(
+KIMI_K25_QZ_API = ApiConfig.from_curl(
         '''
     curl -sS --fail -X POST "https://eojmhg88q8ojcg98kd5q8geoqeeeag95.openapi-sj.sii.edu.cn/v1/chat/completions" \
         -H "Content-Type: application/json" \
@@ -289,7 +290,7 @@ KIMI_K25_API = ApiConfig.from_curl(
           ]
         }'
 ''',
-        model_alias='Kimi-K25'
+        model_alias='Kimi-K252'
 )
 
 llama_3_2_11_b_vision_instruct = ApiConfig.from_curl('''
@@ -308,7 +309,7 @@ curl -sS --fail -X POST "https://gk5b5booehhbce9jjcpj9e9epqm5agdd.openapi-sj.sii
                                                      # https://qz.sii.edu.cn/jobs/modelDeplayDetail/sv-7af3f3cc-6883-4619-94d9-1616debf2755?spaceId=ws-803be1bb-da46-40d8-ae72-df77df9112ca
                                                      model_alias='Llama-3.2-11B-Vision-Instruct')
 
-KIMI_K251_API = ApiConfig.from_curl('''
+KIMI_K25_AGICTO_API = ApiConfig.from_curl('''
 curl -sS --fail -X POST "https://api.agicto.cn/v1/chat/completions" \
     -H "Content-Type: application/json" \
     -H "Authorization: Bearer sk-gkYa8UuT55XckVX3SGFsamidZMTzDfismSCU9i3YWJB8hs2S" \
@@ -322,6 +323,7 @@ curl -sS --fail -X POST "https://api.agicto.cn/v1/chat/completions" \
 
 ''', model_alias='Kimi-K251')
 
+qwen_3_5_397_b = 'qwen3.5-397b'
 MINIMAX_M27_API = ApiConfig.from_env(
         defaults=ApiConfig(
                 base_url="https://bcedpgqjghjpcjkjjchem5oaopkoqbba.openapi-qb-ai.sii.edu.cn/v1",
@@ -382,23 +384,8 @@ curl -sS --fail -X POST "https://bpdbqbeeag9eckcckohq8mk9bqqh8h5a.openapi-sj.sii
         ''', model_alias="glm-4.6v"
 )
 
-QWEN35_397B_API = ApiConfig.from_curl(
+QWEN35_397B_AGICTO_API = ApiConfig.from_curl(
         '''
-curl -sS --fail -X POST "https://pdaj8d5bm9hcckmkjbpkoekpe8q5pedp.openapi-sj.sii.edu.cn/v1/chat/completions" \
-    -H "Content-Type: application/json" \
-    -H "Authorization: Bearer 2uuD5+89UvtRc4nCn5ZMjQyArLh37ndg3Q5fMeZl7p0=" \
-    -d '{
-      "model": "qwen397",
-        "stream": true,
-      "messages": [
-        { "role": "user", "content": "hi" }
-      ]
-    }'
-        ''',
-        model_alias="qwen3.5-397b",
-)
-
-qwenbck = '''
 
 curl -sS --fail -X POST "https://api.agicto.cn/v1/chat/completions" \
     -H "Content-Type: application/json" \
@@ -409,7 +396,33 @@ curl -sS --fail -X POST "https://api.agicto.cn/v1/chat/completions" \
         "messages": [
         { "role": "user", "content": "hi" }
       ]
-    }'''
+    }'
+    
+    
+    '''
+        ,
+        model_alias="qwen3.5-397b1",
+)
+# pdaj8d5bm9hcckmkjbpkoekpe8q5pedp
+QWEN35_397B_QZ_API = ApiConfig.from_curl(
+        '''
+curl -sS --fail -X POST "https://qdg5pch8mqjhcckamchb9qhhjh9gkd8k.openapi-sj.sii.edu.cn/v1/chat/completions" \
+    -H "Content-Type: application/json" \
+    -H "Authorization: Bearer 2uuD5+89UvtRc4nCn5ZMjQyArLh37ndg3Q5fMeZl7p0=" \
+    -d '{
+      "model": "qwen397",
+        "stream": true,
+      "messages": [
+        { "role": "user", "content": "hi" }
+      ]
+    }'
+        ''',
+        model_alias="qwen3.5-397b2",
+)
+QWEN35_397B_CURRENT = replace(QWEN35_397B_AGICTO_API, model_alias="qwen3.5-397b")
+
+KIMI_K25_CURRENT = replace(KIMI_K25_AGICTO_API, model_alias="Kimi-K25")
+
 kimi_vl_a_3_b_instruct = ApiConfig.from_curl(
         # https://qz.sii.edu.cn/jobs/modelDeplayDetail/sv-990f27b2-0636-43e7-b4b2-0e3000594782
         '''
