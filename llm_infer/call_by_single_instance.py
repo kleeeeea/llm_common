@@ -19,6 +19,9 @@ from llm_common.llm_infer.instances import ChatCompletionRequest
 from llm_common.llm_infer.instances import LLMInferInputRecord
 from llm_common.llm_infer.instances import LLMInferResultRecord
 from llm_common.llm_infer.instances import build_user_content
+from llm_common.llm_infer.llm_response_parse import _extract_stream_text
+from llm_common.llm_infer.llm_response_parse import collect_response_data
+from llm_common.llm_infer.llm_response_parse import extract_stream_reasoning_text
 from llm_common.llm_infer.load_env import ENV_FILE
 from llm_common.llm_infer.load_env import load_env_file
 from llm_common.llm_infer.load_env import require_env
@@ -136,20 +139,6 @@ def _check_server_health(base_url: str, api_key: str, timeout: float = 10.0) -> 
         )
 
 
-def normalize_text_content(content: Any) -> str:
-    if isinstance(content, str):
-        return content
-    if isinstance(content, list):
-        texts: list[str] = []
-        for item in content:
-            if isinstance(item, str):
-                texts.append(item)
-            elif isinstance(item, dict):
-                text = item.get("text") or item.get("content")
-                if isinstance(text, str):
-                    texts.append(text)
-        return "".join(texts)
-    return ""
 
 
 def _build_mock_response(prompt: Any) -> str:
@@ -231,6 +220,7 @@ class ChatCompletionChunk:
     choices: tuple[ChatCompletionChunkChoice, ...] = ()
     content: Any = None
     reasoning_content: Any = None
+    reasoning: Any = None
 
     @classmethod
     def from_dict(cls, value: Any) -> "ChatCompletionChunk":
@@ -245,33 +235,6 @@ class ChatCompletionChunk:
             content=value.get("content"),
             reasoning_content=value.get("reasoning_content"),
         )
-
-
-def _extract_stream_text(payload: dict[str, Any]) -> str:
-    chunk = ChatCompletionChunk.from_dict(payload)
-    if chunk.choices:
-        first = chunk.choices[0]
-        text = normalize_text_content(first.delta.content)
-        if text:
-            return text
-        text = normalize_text_content(first.message.content)
-        if text:
-            return text
-    return normalize_text_content(chunk.content)
-
-
-def extract_stream_reasoning_text(payload: dict[str, Any]) -> str:
-    chunk = ChatCompletionChunk.from_dict(payload)
-    if chunk.choices:
-        first = chunk.choices[0]
-        text = normalize_text_content(first.delta.reasoning_content)
-        if text:
-            return text
-        text = normalize_text_content(first.message.reasoning_content)
-        if text:
-            return text
-    return normalize_text_content(chunk.reasoning_content)
-
 
 def _build_chat_completion_request(
         input_: LLMInferInputRecord,
@@ -401,6 +364,30 @@ def call_openai(
     all_payloads: list[str] = []
     usage: Optional[Dict[str, Any]] = None
     _t0 = time.perf_counter()
+
+
+    def collect_response_data(data: dict[str, Any], raw: str) -> None:
+                    nonlocal usage
+                    if data.get("usage"):
+                        usage = data["usage"]
+                    text = _extract_stream_text(data)
+                    reasoning_text = extract_stream_reasoning_text(data)
+                    all_payloads.append(raw)
+                    if reasoning_text:
+                        reasoning_chunks.append(reasoning_text)
+                        if input_.do_print_one_response_per_line:
+                            print(f"reasoning_chunk {reasoning_text}", flush=True)
+                            print('-' * 30)
+                        else:
+                            print(f"\033[31m{reasoning_text}\033[0m", end='', flush=True)
+                    if text:
+                        chunks.append(text)
+                        if input_.do_print_one_response_per_line:
+                            print(f"chunk {text}", flush=True)
+                            print('=' * 30)
+                        else:
+                            print(f"\033[32m{text}\033[0m", end='', flush=True)
+
     #     Out[1]:
     # ['{"id":"8fe1630f301c48a3bf7c4600cd5b17bc","object":"chat.completion.chunk","created":1779609667,"model":"Kimi-K2.6","choices":[{"index":0,"delta":{"role":"assistant","content":"","reasoning_content":null,"tool_calls":null},"logprobs":null,"finish_reason":null,"matched_stop":null}],"usage":null}',
     #  '{"id":"8fe1630f301c48a3bf7c4600cd5b17bc","object":"chat.completion.chunk","created":1779609667,"model":"Kimi-K2.6","choices":[{"index":0,"delta":{"role":null,"content":null,"reasoning_content":"The","tool_calls":null},"logprobs":null,"finish_reason":null,"matched_stop":null}],"usage":null}',
@@ -418,27 +405,6 @@ def call_openai(
             content_type = response.headers.get("content-type", "")
             print(f"HTTP {response.status} content-type={content_type}")
 
-            def collect_response_data(data: dict[str, Any], raw: str) -> None:
-                nonlocal usage
-                if data.get("usage"):
-                    usage = data["usage"]
-                text = _extract_stream_text(data)
-                reasoning_text = extract_stream_reasoning_text(data)
-                all_payloads.append(raw)
-                if reasoning_text:
-                    reasoning_chunks.append(reasoning_text)
-                    if input_.do_print_one_response_per_line:
-                        print(f"reasoning_chunk {reasoning_text}", flush=True)
-                        print('-' * 30)
-                    else:
-                        print(f"\033[31m{reasoning_text}\033[0m", end='', flush=True)
-                if text:
-                    chunks.append(text)
-                    if input_.do_print_one_response_per_line:
-                        print(f"chunk {text}", flush=True)
-                        print('=' * 30)
-                    else:
-                        print(f"\033[32m{text}\033[0m", end='', flush=True)
 
             if "text/event-stream" in content_type:
                 for payload in _stream_sse_lines(response):
@@ -449,7 +415,8 @@ def call_openai(
                     except json.JSONDecodeError:
                         continue
                     if isinstance(data, dict):
-                        collect_response_data(data, payload)
+                        collect_response_data(data, payload, do_print_one_response_per_line=input_.do_print_one_response_per_line)
+
             else:
                 raw = response.read().decode("utf-8", errors="replace")
                 try:
@@ -460,7 +427,7 @@ def call_openai(
                     raise Exception("llm error") from error
                 if not isinstance(data, dict):
                     raise Exception("llm error")
-                collect_response_data(data, raw)
+                collect_response_data(data, raw, do_print_one_response_per_line=input_.do_print_one_response_per_line)
     except urllib.error.HTTPError as error:
         print(f"HTTP {error.code}", file=sys.stderr)
         print(error.read().decode("utf-8", errors="replace")[:4000], file=sys.stderr)
@@ -470,8 +437,14 @@ def call_openai(
         raise Exception('llm error')
 
     text = "".join(chunks).strip()
-    if not text:
+    reasoning = "".join(reasoning_chunks).strip() or None
+    if not text and not reasoning:
         print("ERROR: stream completed but produced no text", file=sys.stderr)
+        import importlib
+        hostname = importlib.import_module("socket").gethostname()
+        if (hostname in {"wsy-pretrain2-cpu-kq--169ddeec5a64-onoqafwz75", "cpu3"} or "mac" in hostname.lower()) and importlib.import_module("os").environ.get("LOCAL_RANK", "0") == "0":
+            importlib.import_module("sys").path.append(str("/home/likeqian/klee_code" if importlib.import_module("os").path.exists("/home/likeqian/klee_code") else importlib.import_module("os").path.expanduser("~/klee_code")));from python_code.borrowed_klee_python_code.pdb import set_trace;set_trace()
+
         if 'https://api.agicto.cn/v1' in input_.api.base_url:
             # commercial api shouldn't lead to infra error
             text = 'Score：0'
@@ -479,7 +452,6 @@ def call_openai(
         else:
             raise Exception('llm error')
 
-    reasoning = "".join(reasoning_chunks).strip() or None
     print()
     return LLMInferResultRecord.from_dict({
         "llm_response": text,
