@@ -20,7 +20,6 @@ from llm_common.llm_infer.instances import LLMInferInputRecord
 from llm_common.llm_infer.instances import LLMInferResultRecord
 from llm_common.llm_infer.instances import build_user_content
 from llm_common.llm_infer.llm_response_parse import _extract_stream_text
-from llm_common.llm_infer.llm_response_parse import collect_response_data
 from llm_common.llm_infer.llm_response_parse import extract_stream_reasoning_text
 from llm_common.llm_infer.load_env import ENV_FILE
 from llm_common.llm_infer.load_env import load_env_file
@@ -226,6 +225,16 @@ class ChatCompletionChunk:
     def from_dict(cls, value: Any) -> "ChatCompletionChunk":
         value = value if isinstance(value, dict) else {}
         choices = value.get("choices")
+        first_delta = (
+            choices[0].get("delta", {})
+            if (
+                isinstance(choices, list)
+                and choices
+                and isinstance(choices[0], dict)
+                and isinstance(choices[0].get("delta"), dict)
+            )
+            else {}
+        )
         return cls(
             choices=tuple(
                 ChatCompletionChunkChoice.from_dict(choice)
@@ -234,6 +243,7 @@ class ChatCompletionChunk:
             ) if isinstance(choices, list) else (),
             content=value.get("content"),
             reasoning_content=value.get("reasoning_content"),
+            reasoning=value.get("reasoning") or first_delta.get("reasoning"),
         )
 
 def _build_chat_completion_request(
@@ -415,7 +425,7 @@ def call_openai(
                     except json.JSONDecodeError:
                         continue
                     if isinstance(data, dict):
-                        collect_response_data(data, payload, do_print_one_response_per_line=input_.do_print_one_response_per_line)
+                        collect_response_data(data, payload)
 
             else:
                 raw = response.read().decode("utf-8", errors="replace")
@@ -427,7 +437,7 @@ def call_openai(
                     raise Exception("llm error") from error
                 if not isinstance(data, dict):
                     raise Exception("llm error")
-                collect_response_data(data, raw, do_print_one_response_per_line=input_.do_print_one_response_per_line)
+                collect_response_data(data, raw)
     except urllib.error.HTTPError as error:
         print(f"HTTP {error.code}", file=sys.stderr)
         print(error.read().decode("utf-8", errors="replace")[:4000], file=sys.stderr)
@@ -450,6 +460,7 @@ def call_openai(
             text = 'Score：0'
 
         else:
+
             raise Exception('llm error')
 
     print()
@@ -465,4 +476,3 @@ def call_openai(
 
 if __name__ == "__main__":
     raise SystemExit(main())
-

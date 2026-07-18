@@ -182,6 +182,16 @@ class ChatCompletionChunkTest(unittest.TestCase):
 
         self.assertEqual(extract_stream_reasoning_text(payload), "reasoning")
 
+    def test_extracts_reasoning_alias(self):
+        payload = {
+            "choices": [{
+                "delta": {"reasoning": "A"},
+            }],
+        }
+
+        self.assertEqual(ChatCompletionChunk.from_dict(payload).reasoning, "A")
+        self.assertEqual(extract_stream_reasoning_text(payload), "A")
+
     def test_supports_message_and_top_level_fallbacks(self):
         self.assertEqual(_extract_stream_text({
             "choices": [{"message": {"content": "message"}}],
