@@ -551,6 +551,30 @@ curl -sS --fail -X POST "https://bgamqga5gogjcb9gmqeaohh8hdhbgddm.openapi-sj.sii
 MODEL_PATH=/inspire/sj-ssd3/project/ai4education/public/models/Qwen3.5-4B
 vllm serve "$MODEL_PATH" --port 8000 --served-model-name Qwen3.5-4B
 '''
+
+qwen_3_5_4_b_local_modelname = 'Qwen3.5-4B-Local'
+qwen_3_5_4_b_local_apiconfig = ApiConfig.from_curl(
+        '''
+curl http://localhost:11434/v1/chat/completions \
+  -H "Content-Type: application/json" \
+    -H "Authorization: Bearer notused1123355" \
+  -d '{
+    "model": "qwen3.5:4b",
+    "messages": [
+      {
+        "role": "user",
+        "content": "hi"
+      }
+    ],
+        "stream": true,
+    "temperature": 0.7
+  }'
+
+        ''',
+        model_alias=qwen_3_5_4_b_local_modelname
+        # https://qz.sii.edu.cn/jobs/modelDeplayDetail/sv-bcdbe477-091e-444f-b0dd-e487d625a42b
+)
+
 qwen_3_5_4_b = ApiConfig.from_curl(
         '''
 curl -sS --fail -X POST "https://mopmqcgg8j9qccc5m8ppqchgpeadkcam.openapi-sj.sii.edu.cn/v1/chat/completions" \
@@ -1310,7 +1334,7 @@ def model_alias_for(model: str) -> str:
 def main():
     from llm_common.llm_infer.call_by_single_instance import call_openai
     from llm_common.llm_infer.instances import LLMInferInputRecord
-    api = config_for_model(qwen_397b_agitcto)
+    api = config_for_model(qwen_3_5_4_b_local_modelname)
     text = call_openai(LLMInferInputRecord(
             prompt=os.environ.get("PROMPT", "hi"),
             api=api,
