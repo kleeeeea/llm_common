@@ -446,6 +446,7 @@ curl -sS --fail -X POST "https://bpdbqbeeag9eckcckohq8mk9bqqh8h5a.openapi-sj.sii
 
 GLM46V_CURRENT = replace(GLM46V_OFFICIAL_API if ismacos else GLM46V_API, model_alias="glm-4.6v")
 
+qwen_397b_agitcto = "qwen3.5-397b-agitcto"
 QWEN35_397B_AGICTO_API = ApiConfig.from_curl(
         '''
 curl -sS --fail -X POST "https://api.agicto.cn/v1/chat/completions" \
@@ -460,7 +461,7 @@ curl -sS --fail -X POST "https://api.agicto.cn/v1/chat/completions" \
     }'
     '''
         ,
-        model_alias="qwen3.5-397b1",
+        model_alias=qwen_397b_agitcto,
 )
 # pdaj8d5bm9hcckmkjbpkoekpe8q5pedp
 QWEN35_397B_QZ_API = ApiConfig.from_curl(
@@ -1309,7 +1310,7 @@ def model_alias_for(model: str) -> str:
 def main():
     from llm_common.llm_infer.call_by_single_instance import call_openai
     from llm_common.llm_infer.instances import LLMInferInputRecord
-    api = config_for_model(kimi_k2_5_agicto)
+    api = config_for_model(qwen_397b_agitcto)
     text = call_openai(LLMInferInputRecord(
             prompt=os.environ.get("PROMPT", "hi"),
             api=api,
