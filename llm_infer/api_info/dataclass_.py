@@ -13,6 +13,7 @@ from llm_common.llm_infer.load_env import load_env_file
 load_env_file(ENV_FILE)
 SII_API_KEY = os.environ.get("SII_API_KEY", "")
 HCNSEC_CN_API_KEY = os.environ.get("HCNSEC_CN_API_KEY", "")
+AGICTO_KEY_API_KEY = os.environ.get("AGICTO_KEY", "")
 ismacos = sys.platform == "darwin"
 
 
@@ -258,7 +259,7 @@ curl https://api.hcnsec.cn/v1/chat/completions \
   -H "Authorization: Bearer {HCNSEC_CN_API_KEY}" \ ''' + '''
   -H "Content-Type: application/json" \
   -d '{
-    "model": "DeepSeek-V4-Flash",
+    "model": "MiniMax-M2.5",
     "messages": [
       {
         "role": "system",
@@ -277,6 +278,8 @@ curl https://api.hcnsec.cn/v1/chat/completions \
         model_alias=deepseekv__hcnsec
         # https://qz.sii.edu.cn/jobs/modelDeplayDetail/sv-d46fd98b-a669-4acb-92b6-85966acbf383?spaceId=ws-33f55cbb-1e6b-4b37-b69d-3b52568e0a61
 )
+
+
 
 # ---------------------------------------------------------------------------
 # Configs ported from TeaCH (scripts/inference/api_configs.py).
@@ -357,10 +360,11 @@ curl -sS --fail -X POST "https://gk5b5booehhbce9jjcpj9e9epqm5agdd.openapi-sj.sii
         model_alias='Llama-3.2-11B-Vision-Instruct'
 )
 
-KIMI_K25_AGICTO_API = ApiConfig.from_curl('''
+kimi_k2_5_agicto = 'Kimi-K25-agicto'
+KIMI_K25_AGICTO_API = ApiConfig.from_curl(f'''
 curl -sS --fail -X POST "https://api.agicto.cn/v1/chat/completions" \
     -H "Content-Type: application/json" \
-    -H "Authorization: Bearer sk-gkYa8UuT55XckVX3SGFsamidZMTzDfismSCU9i3YWJB8hs2S" \
+    -H "Authorization: Bearer {AGICTO_KEY_API_KEY}" \ ''' + '''
     -d '{
         "model": "kimi-k2.5",
         "stream": true,
@@ -369,7 +373,7 @@ curl -sS --fail -X POST "https://api.agicto.cn/v1/chat/completions" \
       ]
     }'
 
-''', model_alias='Kimi-K251')
+''', model_alias=kimi_k2_5_agicto)
 
 qwen_3_5_397_b = 'qwen3.5-397b'
 MINIMAX_M27_API = ApiConfig.from_env(
@@ -1305,11 +1309,9 @@ def model_alias_for(model: str) -> str:
 def main():
     from llm_common.llm_infer.call_by_single_instance import call_openai
     from llm_common.llm_infer.instances import LLMInferInputRecord
-    api = config_for_model(deepseekv__hcnsec)
-    print('*' * 50 + f'''\n{api.api_key}\n^^^(doubao_seed_2_0_lite_API.api_key)^^^\n''' + '''\nat:\ndependencies/llm_evals/llm_common/llm_infer/api_info/dataclass_.py:396\n''' + '*' * 50)
-
+    api = config_for_model(kimi_k2_5_agicto)
     text = call_openai(LLMInferInputRecord(
-            prompt=os.environ.get("PROMPT", "reply with 3 words"),
+            prompt=os.environ.get("PROMPT", "hi"),
             api=api,
             disable_thinking=True,
     ))
