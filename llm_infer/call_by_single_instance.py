@@ -1,3 +1,4 @@
+import codecs
 import json
 import os
 import shlex
@@ -7,6 +8,7 @@ import time
 import urllib.error
 import urllib.request
 from dataclasses import dataclass
+from pathlib import Path
 from typing import Any
 from typing import Dict
 from typing import Optional
@@ -28,17 +30,19 @@ from llm_common.llm_infer.load_env import require_env
 
 def _stream_sse_lines(response):
     buffer = ""
+    decoder = codecs.getincrementaldecoder("utf-8")(errors="replace")
     while True:
         chunk = response.read(1024)
         if not chunk:
             break
-        buffer += chunk.decode("utf-8", errors="replace")
+        buffer += decoder.decode(chunk)
         parts = buffer.replace("\r\n", "\n").split("\n\n")
         buffer = parts.pop() or ""
         for part in parts:
             for line in part.splitlines():
                 if line.startswith("data: "):
                     yield line[6:].strip()
+    buffer += decoder.decode(b"", final=True)
     for line in buffer.splitlines():
         if line.startswith("data: "):
             yield line[6:].strip()
@@ -53,6 +57,32 @@ def _build_chat_completions_url(base_url: str) -> str:
     if base_url.endswith("/chat/completions"):
         return base_url
     return f"{base_url}/chat/completions"
+
+
+def _is_anthropic_messages_url(base_url: str) -> bool:
+    return base_url.strip().rstrip("/").endswith("/messages")
+
+
+def _build_anthropic_payload(input_: LLMInferInputRecord) -> dict[str, Any]:
+    request = _build_chat_completion_request(input_).to_dict()
+    messages = request.get("messages", [])
+    system_parts = [
+        message.get("content", "")
+        for message in messages
+        if message.get("role") == "system"
+    ]
+    payload = {
+        "model": request["model"],
+        "messages": [
+            message for message in messages if message.get("role") != "system"
+        ],
+        "max_tokens": request.get("max_tokens") or 4096,
+        "temperature": request.get("temperature", 0.1),
+        "stream": request.get("stream", True),
+    }
+    if system_parts:
+        payload["system"] = "\n".join(str(part) for part in system_parts)
+    return payload
 
 
 def _dump_curl_command(
@@ -71,7 +101,7 @@ def _dump_curl_command(
 
     command_lines = [
         "#!/usr/bin/env bash",
-        f"LLM_API_KEY=${{LLM_API_KEY:-{shlex.quote(api_key)}}}",
+        f'LLM_API_KEY={api_key}',
         "curl -sS -N -X POST \\",
     ]
     if timeout is not None:
@@ -80,9 +110,10 @@ def _dump_curl_command(
         f"  {shlex.quote(chat_completions_url)} \\",
         '  -H "Authorization: Bearer ${LLM_API_KEY}" \\',
         "  -H 'Content-Type: application/json' \\",
-        f"  -d {shlex.quote(json_body)}",
-        "",
     ])
+    if _is_anthropic_messages_url(chat_completions_url):
+        command_lines.append("  -H 'anthropic-version: 2023-06-01' \\")
+    command_lines.extend([f"  -d {shlex.quote(json_body)}", ""])
 
     with open(output_path, "w", encoding="utf-8") as file:
         file.write("\n".join(command_lines))
@@ -337,9 +368,14 @@ def call_openai(
             latency_ms=0.0,
         )
 
-    body = _build_chat_completion_payload(
-        input_,
-        disable_thinking=input_.disable_thinking,
+    is_anthropic = _is_anthropic_messages_url(input_.api.base_url)
+    body = (
+        _build_anthropic_payload(input_)
+        if is_anthropic
+        else _build_chat_completion_payload(
+            input_,
+            disable_thinking=input_.disable_thinking,
+        )
     )
 
     if input_.chat_completion_request.stream:
@@ -347,22 +383,33 @@ def call_openai(
         print('*' * 50 + f'''\n{input_.prompt}\n^^^(input_.prompt)^^^\n''' + '''\nat:\nllm_common/llm_infer/call.py:243\n''' + '*' * 50)
 
     # first test remote server healthiness using curl
-    _check_server_health(input_.api.base_url, input_.api.api_key, timeout=min(input_.timeout or 10.0, 10.0))
+    # Anthropic-compatible gateways do not expose OpenAI's /models endpoint;
+    # the request itself is the authoritative health check for those URLs.
+    if not is_anthropic:
+        _check_server_health(input_.api.base_url, input_.api.api_key, timeout=min(input_.timeout or 10.0, 10.0))
 
     # support simple non streaming option, just merge in scripts/inference/models.py:289
+    request_url = (
+        input_.api.base_url.strip().rstrip("/")
+        if is_anthropic
+        else _build_chat_completions_url(input_.api.base_url)
+    )
+    request_headers = {
+        "Authorization": f"Bearer {input_.api.api_key}",
+        "Content-Type" : "application/json",
+    }
+    if is_anthropic:
+        request_headers["anthropic-version"] = "2023-06-01"
     request = urllib.request.Request(
-            _build_chat_completions_url(input_.api.base_url),
+            request_url,
             data=json.dumps(body, ensure_ascii=False).encode("utf-8"),
-            headers={
-                    "Authorization": f"Bearer {input_.api.api_key}",
-                    "Content-Type" : "application/json",
-            },
+            headers=request_headers,
             method="POST",
     )
 
     # dump to the curl command to curl_latest.sh at the same directory
     curl_path = _dump_curl_command(
-        _build_chat_completions_url(input_.api.base_url),
+        request_url,
         input_.api.api_key,
         body,
         input_.timeout,
@@ -378,10 +425,32 @@ def call_openai(
 
     def collect_response_data(data: dict[str, Any], raw: str) -> None:
                     nonlocal usage
-                    if data.get("usage"):
-                        usage = data["usage"]
-                    text = _extract_stream_text(data)
-                    reasoning_text = extract_stream_reasoning_text(data)
+                    event_usage = data.get("usage")
+                    if is_anthropic and not event_usage:
+                        message = data.get("message", {})
+                        if isinstance(message, dict):
+                            event_usage = message.get("usage")
+                    if event_usage:
+                        usage = {**(usage or {}), **event_usage}
+                    if is_anthropic:
+                        delta = data.get("delta", {})
+                        text = delta.get("text", "") if isinstance(delta, dict) else ""
+                        reasoning_text = delta.get("thinking", "") if isinstance(delta, dict) else ""
+                        content = data.get("content", [])
+                        if isinstance(content, list):
+                            text = text or "".join(
+                                str(part.get("text", ""))
+                                for part in content
+                                if isinstance(part, dict) and part.get("type") == "text"
+                            )
+                            reasoning_text = reasoning_text or "".join(
+                                str(part.get("thinking", ""))
+                                for part in content
+                                if isinstance(part, dict) and part.get("type") == "thinking"
+                            )
+                    else:
+                        text = _extract_stream_text(data)
+                        reasoning_text = extract_stream_reasoning_text(data)
                     all_payloads.append(raw)
                     if reasoning_text:
                         reasoning_chunks.append(reasoning_text)
@@ -441,7 +510,28 @@ def call_openai(
     except urllib.error.HTTPError as error:
         print(f"HTTP {error.code}", file=sys.stderr)
         print(error.read().decode("utf-8", errors="replace")[:4000], file=sys.stderr)
-        raise Exception('llm error')
+        print('---'* 3)
+        print(input_.model)
+        print('---'* 3)
+        if (
+            isinstance(input_.prompt, list)
+            and input_.prompt
+            and isinstance(input_.prompt[0], dict)
+        ):
+            print(input_.prompt[0].get('text', input_.prompt[0]))
+        else:
+            print(input_.prompt)
+        print('---'* 3)
+        print('paste the response there into reponse_latest.txt')
+
+        txt_ = Path(__file__).resolve().parent / 'reponse_latest.txt'
+        open(txt_,'w').write('')
+        input()
+        text = open(txt_).read().strip()
+        if text:
+            chunks.append(text.strip())
+        else:
+            raise Exception('llm error')
     except Exception as error:
         print(f"ERROR: {error}", file=sys.stderr)
         raise Exception('llm error')
@@ -467,9 +557,19 @@ def call_openai(
     return LLMInferResultRecord.from_dict({
         "llm_response": text,
         "reasoning": reasoning,
-        "prompt_tokens": (usage or {}).get("prompt_tokens"),
-        "completion_tokens": (usage or {}).get("completion_tokens"),
-        "total_tokens": (usage or {}).get("total_tokens"),
+        "prompt_tokens": (usage or {}).get("prompt_tokens", (usage or {}).get("input_tokens")),
+        "completion_tokens": (usage or {}).get("completion_tokens", (usage or {}).get("output_tokens")),
+        "total_tokens": (
+            (usage or {}).get("total_tokens")
+            if (usage or {}).get("total_tokens") is not None
+            else sum(
+                value or 0
+                for value in (
+                    (usage or {}).get("input_tokens"),
+                    (usage or {}).get("output_tokens"),
+                )
+            ) or None
+        ),
         "latency_ms": (time.perf_counter() - _t0) * 1000.0,
     }, input_=input_)
 
