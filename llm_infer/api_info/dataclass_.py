@@ -3,7 +3,6 @@ import os
 import re
 import sys
 from dataclasses import dataclass
-from dataclasses import replace
 from typing import Dict
 from typing import Optional
 
@@ -21,6 +20,8 @@ if __name__ == "__main__":
 load_env_file(ENV_FILE)
 SII_API_KEY = os.environ.get("SII_API_KEY", "")
 YJAPI_API_KEY = os.environ.get("YJAPI_KEY", "")
+YJAPI_ZERO_DOLLAR_PURCHASE_KEY = os.environ.get("YJAPI_ZERO_DOLLAR_PURCHASE_KEY", "")
+YJAPI_CLAUDE_KEY = os.environ.get("YJAPI_CLAUDE_KEY", "")
 ECNU_API_KEY = os.environ.get("ECNU_API_KEY", "")
 HCNSEC_CN_API_KEY = os.environ.get("HCNSEC_CN_API_KEY", "")
 AGICTO_KEY_API_KEY = os.environ.get("AGICTO_KEY", "")
@@ -242,12 +243,14 @@ def model_alias_for(model: str) -> str:
 def main():
     from llm_common.llm_infer.call_by_single_instance import call_openai
     from llm_common.llm_infer.instances import LLMInferInputRecord
+    from llm_common.llm_infer.api_info.registry import gemini3_flash_API
+    from llm_common.llm_infer.api_info.registry import gpt6astra
     from llm_common.llm_infer.api_info.registry import GLM5_3_API_FROM_curl
-    api = apiconfig_for_model(GLM5_3_API_FROM_curl.model)
+    api = GLM5_3_API_FROM_curl
     text = call_openai(LLMInferInputRecord(
             prompt=os.environ.get("PROMPT", "你是什么模型"),
             api=api,
-            disable_thinking=True,
+            # disable_thinking=True,
     ))
     print(text.llm_response)
 

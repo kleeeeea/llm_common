@@ -8,6 +8,8 @@ from llm_common.llm_infer.api_info.dataclass_ import HCNSEC_CN_API_KEY
 from llm_common.llm_infer.api_info.dataclass_ import SII_API_KEY
 from llm_common.llm_infer.api_info.dataclass_ import VOLCANO_API_KEY
 from llm_common.llm_infer.api_info.dataclass_ import YJAPI_API_KEY
+from llm_common.llm_infer.api_info.dataclass_ import YJAPI_CLAUDE_KEY
+from llm_common.llm_infer.api_info.dataclass_ import YJAPI_ZERO_DOLLAR_PURCHASE_KEY
 from llm_common.llm_infer.api_info.dataclass_ import register_api_configs
 ismacos = sys.platform == "darwin"
 
@@ -106,6 +108,190 @@ DEFAULT_BASELINE_API = DEFAULT_1T_BASELINE_API
 #         model_env="GEMINI_MODEL",
 # )
 claude_opus_4_6 = "claude-opus-4-6"
+
+gpt6astra=ApiConfig.from_curl('''
+curl -sS -N -X POST \
+  --max-time 120 \
+  https://api.anyint.ai/openai/v1/chat/completions \
+  -H "Authorization: Bearer sk-qNAdvklUJkSnYDkpzCxp5vhaHPH8QIyLkTLNe5F8MHZHqo0TnbNF" \
+  -H 'Content-Type: application/json' \
+  -d '{
+  "model": "gpt-6-astra",
+  "messages": [
+    {
+      "role": "user",
+      "content": [
+        {
+          "text": "hi",
+          "type": "text"
+        }
+      ]
+    }
+  ],
+  "stream": true,
+  "stream_options": {
+    "include_usage": true
+  }
+}'
+''')
+gemini3_flash_API = ApiConfig.from_curl(f'''
+curl -sS -N -X POST \
+  --max-time 120 \
+  https://www.shenlanqaq.com//v1/chat/completions \
+  -H "Authorization: Bearer {YJAPI_API_KEY}" \\ ''' + '''
+  -H 'Content-Type: application/json' \
+  -d '{
+  "model": "gemini-3-flash",
+  "messages": [
+    {
+      "role": "user",
+      "content": [
+        {
+          "text": "hi",
+          "type": "text"
+        }
+      ]
+    }
+  ],
+  "stream": true,
+  "stream_options": {
+    "include_usage": true
+  }
+}'
+
+''')
+gemini_3_8_flash_high_flash_API = ApiConfig.from_curl(f'''
+curl -sS -N -X POST \
+  --max-time 120 \
+  https://yjapi.manqiaotechnology.com/v1/chat/completions \
+  -H "Authorization: Bearer {YJAPI_API_KEY}" \\ ''' + '''
+  -H 'Content-Type: application/json' \
+  -d '{
+  "model": "gemini-3.8-flash-high",
+  "messages": [
+    {
+      "role": "user",
+      "content": [
+        {
+          "text": "hi",
+          "type": "text"
+        }
+      ]
+    }
+  ],
+  "stream": true,
+  "stream_options": {
+    "include_usage": true
+  }
+}'
+
+''')
+gpt_5_6_sol_API = ApiConfig.from_curl(f'''
+curl -sS -N -X POST \
+  --max-time 120 \
+  https://yjapi.manqiaotechnology.com/v1/chat/completions \
+  -H "Authorization: Bearer {YJAPI_ZERO_DOLLAR_PURCHASE_KEY}" \\ ''' + '''
+  -H 'Content-Type: application/json' \
+  -d '{
+  "model": "gpt-5.6-sol",
+  "messages": [
+    {
+      "role": "user",
+      "content": [
+        {
+          "text": "hi",
+          "type": "text"
+        }
+      ]
+    }
+  ],
+  "stream": true,
+  "stream_options": {
+    "include_usage": true
+  }
+}'
+
+''')
+claude_opus_5_API = ApiConfig.from_curl(f'''
+curl -sS -N -X POST \
+  --max-time 120 \
+  https://yjapi.manqiaotechnology.com/v1/chat/completions \
+  -H "Authorization: Bearer {YJAPI_CLAUDE_KEY}" \\ ''' + '''
+  -H 'Content-Type: application/json' \
+  -d '{
+  "model": "claude-opus-5",
+  "messages": [
+    {
+      "role": "user",
+      "content": [
+        {
+          "text": "hi",
+          "type": "text"
+        }
+      ]
+    }
+  ],
+  "stream": true,
+  "stream_options": {
+    "include_usage": true
+  }
+}'
+
+''')
+claude_sonnet_5_API = ApiConfig.from_curl(f'''
+curl -sS -N -X POST \
+  --max-time 120 \
+  https://yjapi.manqiaotechnology.com/v1/chat/completions \
+  -H "Authorization: Bearer {YJAPI_CLAUDE_KEY}" \\ ''' + '''
+  -H 'Content-Type: application/json' \
+  -d '{
+  "model": "claude-sonnet-5",
+  "messages": [
+    {
+      "role": "user",
+      "content": [
+        {
+          "text": "hi",
+          "type": "text"
+        }
+      ]
+    }
+  ],
+  "stream": true,
+  "stream_options": {
+    "include_usage": true
+  }
+}'
+
+''')
+
+gptluna_API = ApiConfig.from_curl(f'''
+curl -sS -N -X POST \
+  --max-time 120 \
+  https://yjapi.manqiaotechnology.com/v1/chat/completions \
+  -H "Authorization: Bearer {YJAPI_ZERO_DOLLAR_PURCHASE_KEY}" \\ ''' + '''
+  -H 'Content-Type: application/json' \
+  -d '{
+  "model": "gpt-5.6-terra",
+  "messages": [
+    {
+      "role": "user",
+      "content": [
+        {
+          "text": "hi",
+          "type": "text"
+        }
+      ]
+    }
+  ],
+  "stream": true,
+  "stream_options": {
+    "include_usage": true
+  }
+}'
+
+''')
+
 claude_opus_4_6_API = ApiConfig.from_curl(f'''
 curl -sS -N -X POST \
   --max-time 120 \
@@ -144,6 +330,8 @@ GEMINI_2_0_FLASH_API = ApiConfig.from_env(
         key_env="LLM_API_KEY",
         model_env="GEMINI_MODEL",
 )
+
+
 
 GEMINI_2_5_FLASH_API = ApiConfig.from_env(
         defaults=ApiConfig(
@@ -215,7 +403,7 @@ curl https://ark.cn-beijing.volces.com/api/plan/v1/messages \
   -H "Content-Type: application/json" \
   -H "anthropic-version: 2023-06-01" \
   -d '{
-    "model": "glm-5.3",
+    "model": "glm-5.2",
     "max_tokens": 1024,
     "messages": [
       {"role":"user","content":"你是什么模型"}
@@ -224,8 +412,7 @@ curl https://ark.cn-beijing.volces.com/api/plan/v1/messages \
 
 
 ''',
-        model_alias='glm_5_3'
-        # https://qz.sii.edu.cn/jobs/modelDeplayDetail/sv-d46fd98b-a669-4acb-92b6-85966acbf383?spaceId=ws-33f55cbb-1e6b-4b37-b69d-3b52568e0a61
+        model_alias='glm_5_1'
 )
 # https://docs.volcengine.com/docs/82379/1928262?utm_source=chatgpt.com&lang=zh
 # https://console.volcengine.com/ark/region:cn-beijing/subscription/agent-plan

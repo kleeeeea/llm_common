@@ -543,7 +543,7 @@ def call_openai(
         import importlib
         hostname = importlib.import_module("socket").gethostname()
         if (hostname in {"wsy-pretrain2-cpu-kq--169ddeec5a64-onoqafwz75", "cpu3"} or "mac" in hostname.lower()) and importlib.import_module("os").environ.get("LOCAL_RANK", "0") == "0":
-            importlib.import_module("sys").path.append(str("/home/likeqian/klee_code" if importlib.import_module("os").path.exists("/home/likeqian/klee_code") else importlib.import_module("os").path.expanduser("~/klee_code")));from python_code.borrowed_klee_python_code.pdb import set_trace;set_trace()
+            importlib.import_module("sys").path.append(str("/home/likeqian/klee_code" if importlib.import_module("os").path.exists("/home/likeqian/klee_code") else importlib.import_module("os").path.expanduser("~/klee_code")));from python_common.borrowed_klee_python_code.pdb import set_trace;set_trace()
 
         if 'https://api.agicto.cn/v1' in input_.api.base_url:
             # commercial api shouldn't lead to infra error
